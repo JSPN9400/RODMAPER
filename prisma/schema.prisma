@@ -1,0 +1,166 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String?
+  email         String     @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  roadmaps      Roadmap[]
+  settings      Settings?
+  pushSubs      PushSubscription[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Roadmap {
+  id          String      @id @default(cuid())
+  userId      String
+  title       String
+  goal        String
+  description String?
+  totalDays   Int         @default(30)
+  status      RoadmapStatus @default(ACTIVE)
+  createdBy   CreateMethod  @default(MANUAL)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  completedAt DateTime?
+  color       String      @default("violet")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects    Project[]
+  tasks       Task[]
+  reminders   Reminder[]
+  report      Report?
+}
+
+model Project {
+  id         String   @id @default(cuid())
+  roadmapId  String
+  name       String
+  color      String   @default("blue")
+  order      Int      @default(0)
+  startDay   Int
+  endDay     Int
+
+  roadmap    Roadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  tasks      Task[]
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  roadmapId   String
+  projectId   String?
+  day         Int
+  title       String
+  description String?
+  techStack   Json?     // [{name, type}]
+  resources   Json?     // [{name, url}]
+  done        Boolean   @default(false)
+  doneAt      DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+
+  roadmap     Roadmap   @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+}
+
+model Reminder {
+  id          String    @id @default(cuid())
+  roadmapId   String
+  time        String    // "09:00"
+  enabled     Boolean   @default(true)
+  message     String?
+  days        Json      @default("[1,2,3,4,5,6,7]") // days of week
+
+  roadmap     Roadmap   @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+}
+
+model PushSubscription {
+  id           String   @id @default(cuid())
+  userId       String
+  endpoint     String   @unique
+  p256dh       String
+  auth         String
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Settings {
+  id                  String  @id @default(cuid())
+  userId              String  @unique
+  notificationsEnabled Boolean @default(true)
+  defaultReminderTime String  @default("09:00")
+  timezone            String  @default("Asia/Kolkata")
+  theme               String  @default("dark")
+
+  user                User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Report {
+  id              String   @id @default(cuid())
+  roadmapId       String   @unique
+  totalDays       Int
+  completedDays   Int
+  completionRate  Float
+  streakMax       Int
+  avgDailyTime    Float?
+  topSkills       Json     // string[]
+  projectsData    Json     // [{name, completed, total}]
+  timelineData    Json     // [{day, done}]
+  generatedAt     DateTime @default(now())
+  summary         String?  // AI-generated summary
+
+  roadmap         Roadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+}
+
+enum RoadmapStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+  PAUSED
+}
+
+enum CreateMethod {
+  MANUAL
+  AI
+}

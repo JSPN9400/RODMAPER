@@ -1,4 +1,13 @@
 {
-  "/page": "app/page.js",
-  "/dashboard/page": "app/dashboard/page.js"
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/today/route": "app/api/today/route.js",
+  "/api/roadmaps/route": "app/api/roadmaps/route.js",
+  "/api/reports/route": "app/api/reports/route.js",
+  "/settings/page": "app/settings/page.js",
+  "/login/page": "app/login/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/create/page": "app/create/page.js",
+  "/today/page": "app/today/page.js",
+  "/insights/page": "app/insights/page.js",
+  "/reports/page": "app/reports/page.js"
 }

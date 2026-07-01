@@ -1,24 +1,26 @@
 // lib/notifications.ts
-import webpush from 'web-push'
 import { prisma } from './prisma'
 
-webpush.setVapidDetails(
-  'mailto:' + (process.env.VAPID_EMAIL || 'admin@roadmaper.com'),
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-)
+// Lazy initialize web-push only if VAPID keys are set
+function getWebPush() {
+  if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+    return null
+  }
+  const webpush = require('web-push')
+  webpush.setVapidDetails(
+    'mailto:' + (process.env.VAPID_EMAIL || 'admin@roadmaper.com'),
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+    process.env.VAPID_PRIVATE_KEY!
+  )
+  return webpush
+}
 
 export async function sendPushToUser(userId: string, title: string, body: string, url = '/today') {
-  const subs = await prisma.pushSubscription.findMany({ where: { userId } })
+  const webpush = getWebPush()
+  if (!webpush) return 0
 
-  const payload = JSON.stringify({
-    title,
-    body,
-    icon: '/icon-192.png',
-    badge: '/badge-72.png',
-    url,
-    timestamp: Date.now()
-  })
+  const subs = await prisma.pushSubscription.findMany({ where: { userId } })
+  const payload = JSON.stringify({ title, body, icon: '/icon-192.png', url, timestamp: Date.now() })
 
   const results = await Promise.allSettled(
     subs.map(sub =>
@@ -29,30 +31,27 @@ export async function sendPushToUser(userId: string, title: string, body: string
     )
   )
 
-  // Remove expired subscriptions
   const failed = results
-    .map((r, i) => ({ r, sub: subs[i] }))
-    .filter(({ r }) => r.status === 'rejected')
+    .map((r: any, i: number) => ({ r, sub: subs[i] }))
+    .filter(({ r }: any) => r.status === 'rejected')
 
   for (const { sub } of failed) {
     await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {})
   }
 
-  return results.filter(r => r.status === 'fulfilled').length
+  return results.filter((r: any) => r.status === 'fulfilled').length
 }
 
 export async function scheduleReminders() {
-  // Called by cron job — find all active reminders for current time
+  const webpush = getWebPush()
+  if (!webpush) return
+
   const now = new Date()
   const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-  const dayOfWeek = now.getDay() === 0 ? 7 : now.getDay() // 1=Mon, 7=Sun
+  const dayOfWeek = now.getDay() === 0 ? 7 : now.getDay()
 
   const reminders = await prisma.reminder.findMany({
-    where: {
-      time: timeStr,
-      enabled: true,
-      roadmap: { status: 'ACTIVE' }
-    },
+    where: { time: timeStr, enabled: true, roadmap: { status: 'ACTIVE' } },
     include: {
       roadmap: {
         include: {
@@ -66,24 +65,10 @@ export async function scheduleReminders() {
   for (const reminder of reminders) {
     const days = reminder.days as number[]
     if (!days.includes(dayOfWeek)) continue
-
     const roadmap = reminder.roadmap
     const nextTask = roadmap.tasks[0]
     if (!nextTask) continue
-
-    const body = nextTask
-      ? `Day ${nextTask.day}: ${nextTask.title} — ${nextTask.description || ''}`
-      : `Keep going on ${roadmap.title}!`
-
-    await sendPushToUser(
-      roadmap.userId,
-      `⏰ Time to learn! — ${roadmap.title}`,
-      body,
-      `/roadmap/${roadmap.id}`
-    )
+    const body = `Day ${nextTask.day}: ${nextTask.title}`
+    await sendPushToUser(roadmap.userId, `⏰ Time to learn! — ${roadmap.title}`, body, `/roadmap/${roadmap.id}`)
   }
-}
-
-export function generateVapidKeys() {
-  return webpush.generateVAPIDKeys()
 }

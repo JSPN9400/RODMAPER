@@ -5,21 +5,21 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { generateReport } from '@/lib/report-generator'
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
 
-  // Verify ownership
   const task = await prisma.task.findFirst({
-    where: { id: params.id, roadmap: { userId: session.user.id } },
+    where: { id, roadmap: { userId: session.user.id } },
     include: { roadmap: { select: { id: true, totalDays: true } } }
   })
   if (!task) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const updated = await prisma.task.update({
-    where: { id: params.id },
+    where: { id },
     data: {
       ...(body.done !== undefined && {
         done: body.done,
@@ -29,11 +29,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
   })
 
-  // Check if all tasks done → auto-generate report
   const allTasks = await prisma.task.findMany({
     where: { roadmapId: task.roadmap.id }
   })
-  const allDone = allTasks.every(t => t.id === params.id ? body.done : t.done)
+  const allDone = allTasks.every(t => t.id === id ? body.done : t.done)
   if (allDone) {
     await generateReport(task.roadmap.id).catch(console.error)
     await prisma.roadmap.update({

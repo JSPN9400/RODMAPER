@@ -6,9 +6,6 @@ const nextConfig = {
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
     ],
   },
-  experimental: {
-    serverActions: { allowedOrigins: ['localhost:3000'] }
-  }
 }
 
 module.exports = nextConfig

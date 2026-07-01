@@ -7,7 +7,7 @@ import SessionProvider from '@/components/ui/SessionProvider'
 
 export const metadata: Metadata = {
   title: 'RoadMaper — AI Learning System',
-  description: 'Build personalized learning roadmaps, track daily progress, land your dream role',
+  description: 'Build personalized learning roadmaps, track daily progress, and land your dream role',
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

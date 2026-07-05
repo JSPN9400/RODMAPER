@@ -1,4 +1,3 @@
-// app/(marketing)/layout.tsx
 import Link from 'next/link'
 import MarketingNav from './MarketingNav'
 
@@ -11,11 +10,11 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
         <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: 'linear-gradient(135deg, #7c3aed, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '800', color: '#fff' }}>R</div>
-            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>RoadMaper © 2026 · All rights reserved</span>
+            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>RoadMaper Â© 2026 Â· All rights reserved</span>
           </div>
           <div style={{ display: 'flex', gap: '24px' }}>
-            {['Privacy', 'Terms', 'Contact'].map(l => (
-              <Link key={l} href="#" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>{l}</Link>
+            {['Privacy', 'Terms', 'Contact'].map((label) => (
+              <Link key={label} href="#" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>{label}</Link>
             ))}
           </div>
         </div>

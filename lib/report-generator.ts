@@ -1,4 +1,5 @@
 // lib/report-generator.ts
+import { Prisma } from '@prisma/client'
 import { prisma } from './prisma'
 import { generateCompletionSummary } from './ai-generator'
 import { TimelinePoint, ProjectReportData } from '@/types'
@@ -79,18 +80,18 @@ export async function generateReport(roadmapId: string) {
       completedDays,
       completionRate,
       streakMax,
-      topSkills,
-      projectsData,
-      timelineData,
+      topSkills: topSkills as unknown as Prisma.InputJsonValue,
+      projectsData: projectsData as unknown as Prisma.InputJsonValue,
+      timelineData: timelineData as unknown as Prisma.InputJsonValue,
       summary
     },
     update: {
       completedDays,
       completionRate,
       streakMax,
-      topSkills,
-      projectsData,
-      timelineData,
+      topSkills: topSkills as unknown as Prisma.InputJsonValue,
+      projectsData: projectsData as unknown as Prisma.InputJsonValue,
+      timelineData: timelineData as unknown as Prisma.InputJsonValue,
       summary,
       generatedAt: new Date()
     }

@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Bell, BellOff, Plus, Trash2, Clock, Check } from 'lucide-react'
+import { PageError, PageSpinner } from '@/components/ui/PageState'
 
 const DAYS_LABEL = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -8,21 +9,26 @@ export default function RemindersPage() {
   const [roadmaps, setRoadmaps] = useState<any[]>([])
   const [reminders, setReminders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [notif, setNotif] = useState<'default'|'granted'|'denied'>('default')
   const [saved, setSaved] = useState(false)
   const [form, setForm] = useState({ roadmapId:'', time:'09:00', message:'', days:[1,2,3,4,5,6,7] })
 
   useEffect(() => {
     if ('Notification' in window) setNotif(Notification.permission as any)
-    fetch('/api/roadmaps').then(r => r.json()).then(d => {
-      const arr = Array.isArray(d) ? d : []
-      const active = arr.filter((r: any) => r.status === 'ACTIVE')
-      setRoadmaps(active)
-      if (active.length > 0) setForm(f => ({ ...f, roadmapId: active[0].id }))
-      const allReminders = arr.flatMap((rm: any) => (rm.reminders || []).map((r: any) => ({ ...r, roadmapTitle: rm.title })))
-      setReminders(allReminders)
-      setLoading(false)
-    })
+    fetch('/api/roadmaps')
+      .then(async (r) => {
+        const data = await r.json()
+        if (!r.ok) throw new Error(data.error || 'Failed to load reminders')
+        const arr = Array.isArray(data) ? data : []
+        const active = arr.filter((item: any) => item.status === 'ACTIVE')
+        setRoadmaps(active)
+        if (active.length > 0) setForm((f) => ({ ...f, roadmapId: active[0].id }))
+        const allReminders = arr.flatMap((rm: any) => (rm.reminders || []).map((reminder: any) => ({ ...reminder, roadmapTitle: rm.title })))
+        setReminders(allReminders)
+      })
+      .catch((err) => setError(err.message || 'Failed to load reminders'))
+      .finally(() => setLoading(false))
   }, [])
 
   async function requestNotif() {
@@ -58,6 +64,9 @@ export default function RemindersPage() {
   function toggleDay(d: number) {
     setForm(f => ({ ...f, days: f.days.includes(d) ? f.days.filter(x => x !== d) : [...f.days, d].sort() }))
   }
+
+  if (loading) return <PageSpinner label="Loading reminders..." />
+  if (error) return <PageError title="Reminders could not load" message={error} />
 
   return (
     <div style={{ padding: '36px 40px', maxWidth: '700px' }}>
@@ -120,8 +129,7 @@ export default function RemindersPage() {
       {/* Existing reminders */}
       <div>
         <div className="section-title">Your Reminders</div>
-        {loading && <div style={{ color: 'var(--text3)', fontSize: '13px' }}>Loading...</div>}
-        {!loading && reminders.length === 0 && (
+        {reminders.length === 0 && (
           <div style={{ textAlign: 'center', padding: '40px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '12px' }}>
             <BellOff size={22} style={{ color: 'var(--text4)', marginBottom: '10px' }} />
             <p style={{ fontSize: '13px', color: 'var(--text3)', margin: 0 }}>No reminders yet. Add one above.</p>

@@ -118,16 +118,6 @@ export function detectGoalType(goal: string): GoalType {
   return 'short_term'
 }
 
-export function suggestDuration(goal: string, currentLevel: CurrentLevel): number {
-  const normalized = goal.toLowerCase()
-  if (normalized.includes('upsc')) return currentLevel === 'beginner' ? 540 : 365
-  if (normalized.includes('python')) return currentLevel === 'beginner' ? 45 : 30
-  if (normalized.includes('guitar')) return currentLevel === 'beginner' ? 75 : 45
-  if (normalized.includes('phd')) return 730
-  if (normalized.includes('neet') || normalized.includes('jee') || normalized.includes('cat')) return 180
-  return currentLevel === 'beginner' ? 60 : currentLevel === 'intermediate' ? 45 : 30
-}
-
 export async function generateShortTermRoadmap(input: ShortTermRoadmapInput): Promise<ShortTermRoadmap> {
   const systemPrompt = `You are an expert learning coach. Create a practical day-by-day roadmap.
 CRITICAL: Every day must have HANDS-ON practice, not just reading.

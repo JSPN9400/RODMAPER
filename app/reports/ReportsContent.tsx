@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Trophy, TrendingUp, Zap, Target, Share2, Brain, ArrowRight } from 'lucide-react'
+import { PageError, PageSpinner } from '@/components/ui/PageState'
 
 const BAR: Record<string, string> = {
   violet:'#7c3aed', blue:'#2563eb', green:'#16a34a',
@@ -14,22 +15,38 @@ export default function ReportsContent() {
   const [roadmaps, setRoadmaps] = useState<any[]>([])
   const [report, setReport] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+  const [bootLoading, setBootLoading] = useState(true)
+  const [error, setError] = useState('')
   const [selected, setSelected] = useState(searchParams.get('roadmapId') || '')
 
   useEffect(() => {
-    fetch('/api/roadmaps').then(r => r.json()).then(d => {
-      const arr = Array.isArray(d) ? d : []
-      setRoadmaps(arr)
-      if (!selected && arr.length > 0) setSelected(arr[0].id)
-    })
+    fetch('/api/roadmaps')
+      .then(async (r) => {
+        const data = await r.json()
+        if (!r.ok) throw new Error(data.error || 'Failed to load reports')
+        const arr = Array.isArray(data) ? data : []
+        setRoadmaps(arr)
+        if (!selected && arr.length > 0) setSelected(arr[0].id)
+      })
+      .catch((err) => setError(err.message || 'Failed to load reports'))
+      .finally(() => setBootLoading(false))
   }, [])
 
   useEffect(() => {
     if (!selected) { setLoading(false); return }
     setLoading(true)
     fetch(`/api/reports?roadmapId=${selected}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { setReport(d); setLoading(false) })
+      .then(async (r) => {
+        if (!r.ok) {
+          setReport(null)
+          setLoading(false)
+          return null
+        }
+        const data = await r.json()
+        setReport(data)
+        setLoading(false)
+        return data
+      })
   }, [selected])
 
   function copyShare() {
@@ -38,6 +55,9 @@ export default function ReportsContent() {
       `📊 ${report.roadmap.title}\n${report.roadmap.goal}\n\nCompletion: ${report.completionRate}% · ${report.completedDays}/${report.totalDays} days\nMax Streak: ${report.streakMax} 🔥\nSkills: ${report.topSkills?.join(', ')}\n\n${report.summary || ''}`
     )
   }
+
+  if (bootLoading) return <PageSpinner label="Loading reports..." />
+  if (error) return <PageError title="Reports could not load" message={error} />
 
   return (
     <div style={{ padding: '36px 40px', maxWidth: '860px' }}>

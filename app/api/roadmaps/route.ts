@@ -1,155 +1,150 @@
 // app/api/roadmaps/route.ts
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { privateJson } from '@/lib/api-response'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { generateRoadmapWithAI } from '@/lib/ai-generator'
-import { AIRoadmapInput } from '@/types'
 
 // GET /api/roadmaps - get all roadmaps for user
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.user?.id) return privateJson({ error: 'Unauthorized' }, { status: 401 })
 
   const roadmaps = await prisma.roadmap.findMany({
     where: { userId: session.user.id },
-    include: {
-      projects: { orderBy: { order: 'asc' } },
-      tasks: { select: { id: true, day: true, done: true } },
+    select: {
+      id: true,
+      title: true,
+      goal: true,
+      description: true,
+      totalDays: true,
+      roadmapType: true,
+      targetDate: true,
+      status: true,
+      createdBy: true,
+      color: true,
+      createdAt: true,
+      updatedAt: true,
+      completedAt: true,
       reminders: true,
-      report: { select: { completionRate: true, completedDays: true } }
+      report: { select: { completionRate: true, completedDays: true } },
+      _count: { select: { tasks: true } },
     },
     orderBy: { updatedAt: 'desc' }
   })
 
-  return NextResponse.json(roadmaps)
+  const roadmapIds = roadmaps.map((roadmap) => roadmap.id)
+
+  const [doneCounts, nextTasks] = await Promise.all([
+    prisma.task.groupBy({
+      by: ['roadmapId'],
+      where: {
+        roadmapId: { in: roadmapIds },
+        done: true,
+      },
+      _count: { _all: true },
+    }),
+    prisma.task.findMany({
+      where: {
+        roadmapId: { in: roadmapIds },
+        done: false,
+      },
+      select: {
+        roadmapId: true,
+        title: true,
+        day: true,
+      },
+      orderBy: [
+        { roadmapId: 'asc' },
+        { day: 'asc' },
+      ],
+      distinct: ['roadmapId'],
+    }),
+  ])
+
+  const doneCountMap = new Map(doneCounts.map((item) => [item.roadmapId, item._count._all]))
+  const nextTaskMap = new Map(nextTasks.map((task) => [task.roadmapId, task]))
+
+  return privateJson(
+    roadmaps.map((roadmap) => ({
+      ...roadmap,
+      doneCount: doneCountMap.get(roadmap.id) || 0,
+      nextTaskTitle: nextTaskMap.get(roadmap.id)?.title || null,
+      nextTaskDay: nextTaskMap.get(roadmap.id)?.day || null,
+    }))
+  )
 }
 
-// POST /api/roadmaps - create roadmap (manual or AI)
+// POST /api/roadmaps - save a pre-generated/manual roadmap
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.user?.id) return privateJson({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await req.json()
-  const { mode, ...data } = body
+  const data = await req.json()
 
-  if (mode === 'ai') {
-    // AI Generation
-    const input: AIRoadmapInput = {
+  const roadmap = await prisma.roadmap.create({
+    data: {
+      userId: session.user.id,
+      title: data.title,
       goal: data.goal,
-      background: data.background,
-      days: data.days || 30,
-      hoursPerDay: data.hoursPerDay || 7,
-      focusAreas: data.focusAreas,
-      studyDomain: data.studyDomain
-    }
-
-    const generated = await generateRoadmapWithAI(input)
-
-    // Save to DB
-    const roadmap = await prisma.roadmap.create({
-      data: {
-        userId: session.user.id,
-        title: generated.title,
-        goal: generated.goal,
-        description: generated.description,
-        totalDays: generated.days,
-        createdBy: 'AI',
-        color: data.color || 'violet',
-        projects: {
-          create: generated.projects.map((p, i) => ({
-            name: p.name,
-            color: p.color,
-            order: i,
-            startDay: p.startDay,
-            endDay: p.endDay
-          }))
-        }
+      description: data.description,
+      totalDays: data.totalDays || 30,
+      roadmapType: data.roadmapType || 'SHORT_TERM',
+      targetDate: data.targetDate ? new Date(data.targetDate) : null,
+      color: data.color || 'violet',
+      createdBy: data.createdBy || 'MANUAL',
+      phases: data.phases?.length
+        ? {
+            create: data.phases.map((phase: any) => ({
+              name: phase.name,
+              order: phase.order,
+              startWeek: phase.startWeek,
+              endWeek: phase.endWeek,
+              milestones: phase.milestones || [],
+              topics: phase.topics || [],
+            })),
+          }
+        : undefined,
+      projects: {
+        create: (data.projects || []).map((project: any, index: number) => ({
+          name: project.name,
+          color: project.color || 'blue',
+          order: index,
+          startDay: project.startDay,
+          endDay: project.endDay,
+        })),
       },
-      include: { projects: true }
-    })
+    },
+    include: { projects: true },
+  })
 
-    // Create tasks linked to projects
-    const taskCreates = generated.tasks.map(t => ({
-      roadmapId: roadmap.id,
-      projectId: roadmap.projects[t.projectIndex]?.id || null,
-      day: t.day,
-      title: t.title,
-      description: t.description,
-      techStack: t.techStack as any,
-      resources: t.resources as any
-    }))
-
-    await prisma.task.createMany({ data: taskCreates })
-
-    // Create default reminder
-    await prisma.reminder.create({
-      data: {
+  if (data.tasks?.length) {
+    await prisma.task.createMany({
+      data: data.tasks.map((task: any) => ({
         roadmapId: roadmap.id,
-        time: '09:00',
-        enabled: true,
-        message: `Time to learn! Today's task is waiting.`,
-        days: [1, 2, 3, 4, 5, 6, 7]
-      }
+        projectId: roadmap.projects[task.projectIndex || 0]?.id || null,
+        day: task.day,
+        title: task.title,
+        description: task.description || '',
+        techStack: task.techStack || [],
+        resources: task.resources || [],
+      })),
     })
-
-    const full = await prisma.roadmap.findUnique({
-      where: { id: roadmap.id },
-      include: { projects: true, tasks: true, reminders: true }
-    })
-    return NextResponse.json(full, { status: 201 })
-
-  } else {
-    // Manual creation
-    const roadmap = await prisma.roadmap.create({
-      data: {
-        userId: session.user.id,
-        title: data.title,
-        goal: data.goal,
-        description: data.description,
-        totalDays: data.totalDays || 30,
-        color: data.color || 'violet',
-        createdBy: 'MANUAL',
-        projects: {
-          create: (data.projects || []).map((p: any, i: number) => ({
-            name: p.name,
-            color: p.color || 'blue',
-            order: i,
-            startDay: p.startDay,
-            endDay: p.endDay
-          }))
-        }
-      },
-      include: { projects: true }
-    })
-
-    if (data.tasks?.length) {
-      await prisma.task.createMany({
-        data: data.tasks.map((t: any) => ({
-          roadmapId: roadmap.id,
-          projectId: roadmap.projects[t.projectIndex || 0]?.id || null,
-          day: t.day,
-          title: t.title,
-          description: t.description || '',
-          techStack: t.techStack || [],
-          resources: t.resources || []
-        }))
-      })
-    }
-
-    await prisma.reminder.create({
-      data: {
-        roadmapId: roadmap.id,
-        time: '09:00',
-        enabled: true,
-        days: [1, 2, 3, 4, 5, 6, 7]
-      }
-    })
-
-    const full = await prisma.roadmap.findUnique({
-      where: { id: roadmap.id },
-      include: { projects: true, tasks: true, reminders: true }
-    })
-    return NextResponse.json(full, { status: 201 })
   }
+
+  await prisma.reminder.create({
+    data: {
+      roadmapId: roadmap.id,
+      time: '09:00',
+      enabled: true,
+      days: [1, 2, 3, 4, 5, 6, 7],
+    },
+  })
+
+  const full = await prisma.roadmap.findUnique({
+    where: { id: roadmap.id },
+    include: { phases: true, projects: true, tasks: true, reminders: true },
+  })
+
+  return privateJson(full, { status: 201 })
 }

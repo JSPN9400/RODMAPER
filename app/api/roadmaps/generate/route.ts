@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { privateJson } from '@/lib/api-response'
+import { trackGoalPopularity } from '@/lib/goal-analytics'
 import { prisma } from '@/lib/prisma'
 import {
   detectGoalType,
@@ -10,8 +12,7 @@ import {
   type ExamType,
   type FocusType,
   type GoalType,
-} from '@/lib/ai-engine/universal-roadmap'
-import { trackGoalPopularity } from '@/lib/ai-engine/goal-analytics'
+} from '@/lib/roadmap-generator'
 import { Prisma, RoadmapType } from '@prisma/client'
 
 type RequestBody = {
@@ -29,11 +30,11 @@ type RequestBody = {
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.user?.id) return privateJson({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json() as RequestBody
   const goal = body.goal?.trim()
-  if (!goal) return NextResponse.json({ error: 'Goal is required' }, { status: 400 })
+  if (!goal) return privateJson({ error: 'Goal is required' }, { status: 400 })
 
   const resolvedType = body.type || detectGoalType(goal)
   const color = body.color || 'violet'
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
     })
 
     await trackGoalPopularity(goal, 'SHORT_TERM', body.duration)
-    return NextResponse.json({ type: resolvedType, roadmap, id: created.id }, { status: 201 })
+    return privateJson({ type: resolvedType, roadmap, id: created.id }, { status: 201 })
   }
 
   const roadmap = await generateLongTermRoadmap({
@@ -135,5 +136,5 @@ export async function POST(req: NextRequest) {
   })
 
   await trackGoalPopularity(goal, 'LONG_TERM', totalDays)
-  return NextResponse.json({ type: resolvedType, roadmap, id: created.id }, { status: 201 })
+  return privateJson({ type: resolvedType, roadmap, id: created.id }, { status: 201 })
 }

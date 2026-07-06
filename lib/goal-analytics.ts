@@ -7,6 +7,7 @@ function toGoalKey(goal: string, type: RoadmapType) {
 
 export async function trackGoalPopularity(goal: string, type: RoadmapType, duration: number) {
   const goalKey = toGoalKey(goal, type)
+
   await prisma.goalAnalytics.upsert({
     where: { goalKey },
     create: {
@@ -23,8 +24,14 @@ export async function trackGoalPopularity(goal: string, type: RoadmapType, durat
   })
 }
 
-export async function updateSuccessRate(goal: string, completionRate: number, daysActuallyTaken: number, type: RoadmapType = 'SHORT_TERM') {
+export async function updateSuccessRate(
+  goal: string,
+  completionRate: number,
+  daysActuallyTaken: number,
+  type: RoadmapType = 'SHORT_TERM',
+) {
   const goalKey = toGoalKey(goal, type)
+
   await prisma.goalAnalytics.upsert({
     where: { goalKey },
     create: {

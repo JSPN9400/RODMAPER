@@ -24,7 +24,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {session ? (
             <div style={{ display: 'flex', minHeight: '100vh' }}>
               <Sidebar user={session.user} />
-              <main style={{ flex: 1, marginLeft: '220px', minHeight: '100vh', overflowY: 'auto', background: 'var(--bg)' }}>
+              <main className="page-shell" style={{ flex: 1, marginLeft: '240px', minHeight: '100vh', overflowY: 'auto', background: 'var(--bg)' }}>
                 {children}
               </main>
             </div>

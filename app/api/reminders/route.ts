@@ -1,13 +1,14 @@
 // app/api/reminders/route.ts
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { privateJson } from '@/lib/api-response'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 // POST - create reminder
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.user?.id) return privateJson({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
 
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest) {
   const roadmap = await prisma.roadmap.findFirst({
     where: { id: body.roadmapId, userId: session.user.id }
   })
-  if (!roadmap) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!roadmap) return privateJson({ error: 'Not found' }, { status: 404 })
 
   const reminder = await prisma.reminder.create({
     data: {
@@ -27,13 +28,13 @@ export async function POST(req: NextRequest) {
     }
   })
 
-  return NextResponse.json(reminder, { status: 201 })
+  return privateJson(reminder, { status: 201 })
 }
 
 // PATCH - update reminder (toggle, change time)
 export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.user?.id) return privateJson({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
   const { id, ...updates } = body
@@ -41,7 +42,7 @@ export async function PATCH(req: NextRequest) {
   const reminder = await prisma.reminder.findFirst({
     where: { id, roadmap: { userId: session.user.id } }
   })
-  if (!reminder) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!reminder) return privateJson({ error: 'Not found' }, { status: 404 })
 
   const updated = await prisma.reminder.update({
     where: { id },
@@ -53,23 +54,23 @@ export async function PATCH(req: NextRequest) {
     }
   })
 
-  return NextResponse.json(updated)
+  return privateJson(updated)
 }
 
 // DELETE
 export async function DELETE(req: NextRequest) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.user?.id) return privateJson({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
-  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+  if (!id) return privateJson({ error: 'Missing id' }, { status: 400 })
 
   const reminder = await prisma.reminder.findFirst({
     where: { id, roadmap: { userId: session.user.id } }
   })
-  if (!reminder) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!reminder) return privateJson({ error: 'Not found' }, { status: 404 })
 
   await prisma.reminder.delete({ where: { id } })
-  return NextResponse.json({ success: true })
+  return privateJson({ success: true })
 }

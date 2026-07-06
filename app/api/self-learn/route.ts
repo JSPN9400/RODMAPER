@@ -1,13 +1,14 @@
 // app/api/self-learn/route.ts
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { privateJson } from '@/lib/api-response'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { selfLearnFromProgress, suggestNextTask } from '@/lib/ai-generator'
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.user?.id) return privateJson({ error: 'Unauthorized' }, { status: 401 })
 
   const { roadmapId, action } = await req.json()
 
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest) {
     where: { id: roadmapId, userId: session.user.id },
     include: { tasks: true }
   })
-  if (!roadmap) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!roadmap) return privateJson({ error: 'Not found' }, { status: 404 })
 
   const tasks = roadmap.tasks
   const doneTasks = tasks.filter(t => t.done)
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
     const skippedTopics = tasks.filter(t => !t.done).slice(0, 5).map(t => t.title)
     const daysLeft = tasks.filter(t => !t.done).length
     const suggestion = await suggestNextTask({ completedTopics, skippedTopics, goal: roadmap.goal, daysLeft })
-    return NextResponse.json(suggestion)
+    return privateJson(suggestion)
   }
 
   // Default: full self-learn analysis
@@ -62,5 +63,5 @@ export async function POST(req: NextRequest) {
     avgDaysPerWeek
   })
 
-  return NextResponse.json({ ...analysis, completionRate, streakMax, topSkills })
+  return privateJson({ ...analysis, completionRate, streakMax, topSkills })
 }

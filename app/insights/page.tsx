@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Brain, TrendingUp, Zap, Target, RefreshCw, ChevronRight, Lightbulb, AlertTriangle } from 'lucide-react'
+import { PageError } from '@/components/ui/PageState'
 
 export default function InsightsPage() {
   const [roadmaps, setRoadmaps] = useState<any[]>([])
@@ -9,23 +10,29 @@ export default function InsightsPage() {
   const [data, setData] = useState<any>(null)
   const [suggestion, setSuggestion] = useState<any>(null)
   const [sugLoading, setSugLoading] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    fetch('/api/roadmaps').then(r => r.json()).then(d => {
-      const active = (Array.isArray(d) ? d : []).filter((r: any) => r.status === 'ACTIVE')
-      setRoadmaps(active)
-      if (active.length > 0) setSelected(active[0].id)
-    })
+    fetch('/api/roadmaps')
+      .then(async (r) => {
+        const data = await r.json()
+        if (!r.ok) throw new Error(data.error || 'Failed to load insights')
+        const active = (Array.isArray(data) ? data : []).filter((item: any) => item.status === 'ACTIVE')
+        setRoadmaps(active)
+        if (active.length > 0) setSelected(active[0].id)
+      })
+      .catch((err) => setError(err.message || 'Failed to load insights'))
   }, [])
 
   async function analyze() {
     if (!selected) return
-    setLoading(true); setData(null)
+    setLoading(true); setData(null); setError('')
     const res = await fetch('/api/self-learn', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ roadmapId: selected, action: 'analyze' })
     })
     const d = await res.json()
+    if (!res.ok) { setError(d.error || 'Analysis failed'); setLoading(false); return }
     setData(d); setLoading(false)
   }
 
@@ -37,6 +44,7 @@ export default function InsightsPage() {
       body: JSON.stringify({ roadmapId: selected, action: 'suggest' })
     })
     const d = await res.json()
+    if (!res.ok) { setError(d.error || 'Suggestion failed'); setSugLoading(false); return }
     setSuggestion(d); setSugLoading(false)
   }
 
@@ -65,8 +73,10 @@ export default function InsightsPage() {
         </div>
       </div>
 
+      {error && <PageError title="Insights could not load" message={error} />}
+
       {/* Empty */}
-      {!data && !loading && (
+      {!error && !data && !loading && (
         <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '14px' }}>
           <Brain size={32} style={{ color: 'var(--text4)', marginBottom: '14px' }} />
           <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>Ready to learn about your learning?</h2>
@@ -77,7 +87,7 @@ export default function InsightsPage() {
         </div>
       )}
 
-      {loading && (
+      {!error && loading && (
         <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '14px' }}>
           <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '16px' }}>
             {[0,1,2].map(i => <div key={i} style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent)', animation: `pulse-dot 1.2s ease-in-out ${i*0.2}s infinite` }} />)}
@@ -87,7 +97,7 @@ export default function InsightsPage() {
       )}
 
       {/* Results */}
-      {data && (
+      {!error && data && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
           {/* Motivation score + learning style */}

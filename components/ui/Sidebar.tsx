@@ -8,7 +8,7 @@ import { LayoutDashboard, Map, Plus, Bell, BarChart2, Settings, LogOut, Zap, Bra
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/today', label: 'Today', icon: Zap, badge: 'LIVE' },
-  { href: '/roadmap', label: 'Roadmaps', icon: Map },
+  { href: '/dashboard', label: 'Roadmaps', icon: Map },
   { href: '/create', label: 'New Roadmap', icon: Plus },
   { href: '/insights', label: 'AI Insights', icon: Brain, badge: 'NEW' },
   { href: '/reminders', label: 'Reminders', icon: Bell },

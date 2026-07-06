@@ -13,6 +13,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const roadmap = await prisma.roadmap.findFirst({
     where: { id, userId: session.user.id },
     include: {
+      phases: { orderBy: { order: 'asc' } },
       projects: { orderBy: { order: 'asc' } },
       tasks: { orderBy: { day: 'asc' } },
       reminders: true,

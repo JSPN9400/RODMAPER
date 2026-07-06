@@ -1,6 +1,34 @@
 // types/index.ts
 
-export type TechType = 'sql' | 'python' | 'bi' | 'ai' | 'git' | 'js' | 'design' | 'other'
+export type StudyDomain =
+  | 'technology'
+  | 'science'
+  | 'mathematics'
+  | 'medical'
+  | 'commerce'
+  | 'arts'
+  | 'language'
+  | 'business'
+  | 'exam'
+  | 'other'
+
+export type TechType =
+  | 'sql'
+  | 'python'
+  | 'bi'
+  | 'ai'
+  | 'git'
+  | 'js'
+  | 'design'
+  | 'physics'
+  | 'chemistry'
+  | 'biology'
+  | 'mathematics'
+  | 'medical'
+  | 'commerce'
+  | 'language'
+  | 'research'
+  | 'other'
 
 export interface TechItem {
   name: string
@@ -55,6 +83,8 @@ export interface Roadmap {
   goal: string
   description?: string | null
   totalDays: number
+  roadmapType?: 'SHORT_TERM' | 'LONG_TERM'
+  targetDate?: Date | null
   status: 'ACTIVE' | 'COMPLETED' | 'ARCHIVED' | 'PAUSED'
   createdBy: 'MANUAL' | 'AI'
   color: string
@@ -62,9 +92,21 @@ export interface Roadmap {
   updatedAt: Date
   completedAt?: Date | null
   projects?: Project[]
+  phases?: Phase[]
   tasks?: Task[]
   reminders?: Reminder[]
   report?: Report | null
+}
+
+export interface Phase {
+  id: string
+  roadmapId: string
+  name: string
+  order: number
+  startWeek: number
+  endWeek: number
+  milestones: unknown
+  topics: unknown
 }
 
 export interface Report {
@@ -111,6 +153,7 @@ export interface AIRoadmapInput {
   days: number
   hoursPerDay: number
   focusAreas?: string
+  studyDomain?: StudyDomain
 }
 
 export interface AIGeneratedRoadmap {

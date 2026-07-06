@@ -1,343 +1,242 @@
 'use client'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, PenLine, Plus, Minus, Loader2, Brain, CheckCircle2, AlertCircle, ChevronRight } from 'lucide-react'
+import { Brain, CalendarDays, ChevronRight, GraduationCap, Loader2, PenLine, Sparkles } from 'lucide-react'
 
-const COLORS = ['violet','blue','green','amber','red','teal','pink']
-const COLOR_HEX: Record<string, string> = {
-  violet:'#7c3aed', blue:'#2563eb', green:'#16a34a',
-  amber:'#d97706', red:'#dc2626', teal:'#0d9488', pink:'#db2777'
-}
+type GoalType = 'short_term' | 'long_term'
+type CurrentLevel = 'beginner' | 'intermediate' | 'advanced'
+type FocusType = 'practice' | 'theory' | 'mixed'
+type ExamType = 'competitive_exam' | 'degree' | 'certification' | 'career' | 'research'
 
-export default function CreateRoadmap() {
+const levelOptions: CurrentLevel[] = ['beginner', 'intermediate', 'advanced']
+const focusOptions: { value: FocusType; label: string }[] = [
+  { value: 'practice', label: 'More practice' },
+  { value: 'theory', label: 'More theory' },
+  { value: 'mixed', label: 'Balanced' },
+]
+const examTypeOptions: { value: ExamType; label: string }[] = [
+  { value: 'competitive_exam', label: 'Competitive exam' },
+  { value: 'degree', label: 'Degree / academic program' },
+  { value: 'certification', label: 'Certification' },
+  { value: 'career', label: 'Career growth' },
+  { value: 'research', label: 'Research / PhD' },
+]
+
+export default function CreateRoadmapPage() {
   const router = useRouter()
-  const [mode, setMode] = useState<'choose'|'ai'|'manual'>('choose')
+  const [step, setStep] = useState<1 | 2>(1)
+  const [goalType, setGoalType] = useState<GoalType | null>(null)
+  const [smartGoal, setSmartGoal] = useState('')
+  const [smartLoading, setSmartLoading] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [color, setColor] = useState('violet')
   const [error, setError] = useState('')
 
-  // NLU state
-  const [smartInput, setSmartInput] = useState('')
-  const [nluLoading, setNluLoading] = useState(false)
-  const [nluResult, setNluResult] = useState<any>(null)
-  const [nluDone, setNluDone] = useState(false)
+  const [shortTerm, setShortTerm] = useState({
+    goal: '',
+    currentLevel: 'beginner' as CurrentLevel,
+    duration: 30,
+    hoursPerDay: 3,
+    background: '',
+    focusType: 'mixed' as FocusType,
+  })
 
-  // AI form
-  const [ai, setAI] = useState({ goal:'', background:'', days:'30', hoursPerDay:'4', focusAreas:'' })
+  const [longTerm, setLongTerm] = useState({
+    goal: '',
+    targetDate: '',
+    duration: 180,
+    currentLevel: 'beginner' as CurrentLevel,
+    hoursPerDay: 3,
+    background: '',
+    examType: 'competitive_exam' as ExamType,
+  })
 
-  // Manual form
-  const [manual, setManual] = useState({ title:'', goal:'', description:'', totalDays:'30' })
-  const [projects, setProjects] = useState([{ name:'', startDay:'1', endDay:'7', color:'blue' }])
-  const [tasks, setTasks] = useState([{ day:'1', title:'', description:'', projectIndex:'0' }])
-
-  // ── NLU: Smart parse ──────────────────────────────────────────────────────
-  async function runNLU() {
-    if (!smartInput.trim()) return
-    setNluLoading(true)
-    setNluResult(null)
+  async function letAIDecide() {
+    if (!smartGoal.trim()) return
+    setSmartLoading(true)
+    setError('')
     try {
       const res = await fetch('/api/nlu', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input: smartInput })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: smartGoal }),
       })
-      const data = await res.json()
-      setNluResult(data)
-      // Auto-fill AI form
-      setAI({
-        goal: data.goal || smartInput,
-        background: data.background || '',
-        days: String(data.days || 30),
-        hoursPerDay: String(data.hoursPerDay || 4),
-        focusAreas: data.focusAreas || ''
-      })
-      setNluDone(true)
-    } catch {
-      setError('NLU parse failed — fill manually')
-    }
-    setNluLoading(false)
-  }
-
-  function applyNLU() {
-    setMode('ai')
-    setNluDone(false)
-  }
-
-  // ── Submit AI ──────────────────────────────────────────────────────────────
-  async function submitAI() {
-    if (!ai.goal || !ai.background) { setError('Goal and background are required'); return }
-    setLoading(true); setError('')
-    try {
-      const res = await fetch('/api/roadmaps', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'ai', color, ...ai, days: +ai.days, hoursPerDay: +ai.hoursPerDay })
-      })
-      if (!res.ok) {
-        const err = await res.text()
-        throw new Error(err.includes('credit') ? 'Gemini API key missing or quota exceeded. Check GEMINI_API_KEY in .env.local' : err)
+      const parsed = await res.json()
+      const inferredType: GoalType = parsed.days && parsed.days > 90 ? 'long_term' : 'short_term'
+      setGoalType(inferredType)
+      setStep(2)
+      if (inferredType === 'short_term') {
+        setShortTerm((prev) => ({
+          ...prev,
+          goal: parsed.goal || smartGoal,
+          background: parsed.background || '',
+          duration: Math.min(Math.max(Number(parsed.days) || 30, 7), 90),
+          hoursPerDay: Math.min(Math.max(Number(parsed.hoursPerDay) || 3, 1), 8),
+          focusType: 'mixed',
+        }))
+      } else {
+        setLongTerm((prev) => ({
+          ...prev,
+          goal: parsed.goal || smartGoal,
+          background: parsed.background || '',
+          duration: Math.max(Number(parsed.days) || 180, 91),
+        }))
       }
+    } catch {
+      setError('AI could not understand the goal. You can still choose manually.')
+    }
+    setSmartLoading(false)
+  }
+
+  async function generateRoadmap() {
+    setLoading(true)
+    setError('')
+    try {
+      const body = goalType === 'short_term'
+        ? {
+            type: 'short_term',
+            goal: shortTerm.goal,
+            currentLevel: shortTerm.currentLevel,
+            duration: shortTerm.duration,
+            hoursPerDay: shortTerm.hoursPerDay,
+            background: shortTerm.background,
+            focusType: shortTerm.focusType,
+          }
+        : {
+            type: 'long_term',
+            goal: longTerm.goal,
+            currentLevel: longTerm.currentLevel,
+            duration: longTerm.duration,
+            hoursPerDay: longTerm.hoursPerDay,
+            background: longTerm.background,
+            examType: longTerm.examType,
+            targetDate: longTerm.targetDate || undefined,
+          }
+
+      const res = await fetch('/api/roadmaps/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
       const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to generate roadmap')
       router.push(`/roadmap/${data.id}`)
     } catch (e: any) {
-      setError(e.message || 'Failed to generate')
+      setError(e.message || 'Failed to generate roadmap')
       setLoading(false)
     }
   }
 
-  // ── Submit Manual ──────────────────────────────────────────────────────────
-  async function submitManual() {
-    if (!manual.title || !manual.goal) { setError('Title and goal required'); return }
-    setLoading(true); setError('')
-    try {
-      const res = await fetch('/api/roadmaps', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: 'manual', color, ...manual, totalDays: +manual.totalDays,
-          projects: projects.map(p => ({ ...p, startDay: +p.startDay, endDay: +p.endDay })),
-          tasks: tasks.map(t => ({ ...t, day: +t.day, projectIndex: +t.projectIndex }))
-        })
-      })
-      if (!res.ok) throw new Error(await res.text())
-      const data = await res.json()
-      router.push(`/roadmap/${data.id}`)
-    } catch (e: any) { setError(e.message || 'Failed'); setLoading(false) }
-  }
-
-  // ── Color picker ──────────────────────────────────────────────────────────
-  const ColorPicker = () => (
-    <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'10px', padding:'16px 18px', marginBottom:'12px' }}>
-      <div className="label">Color</div>
-      <div style={{ display:'flex', gap:'8px' }}>
-        {COLORS.map(c => (
-          <button key={c} onClick={() => setColor(c)} style={{
-            width:'26px', height:'26px', borderRadius:'50%', border: color===c ? `3px solid ${COLOR_HEX[c]}` : '2px solid transparent',
-            background: COLOR_HEX[c], cursor:'pointer', outline: color===c ? `2px solid white` : 'none',
-            outlineOffset: '-4px', transition:'all 0.15s', transform: color===c ? 'scale(1.15)' : 'scale(1)'
-          }} />
-        ))}
-      </div>
-    </div>
-  )
-
-  // ── Choose mode ────────────────────────────────────────────────────────────
-  if (mode === 'choose') return (
-    <div style={{ padding:'36px 40px', maxWidth:'700px' }}>
-      <h1 style={{ fontSize:'22px', fontWeight:'700', letterSpacing:'-0.5px', marginBottom:'6px' }}>Create Roadmap</h1>
-      <p style={{ fontSize:'13px', color:'var(--text3)', marginBottom:'32px' }}>Choose how to build your learning roadmap</p>
-
-      {/* Smart NLU input */}
-      <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'14px', padding:'22px', marginBottom:'20px' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'12px' }}>
-          <Brain size={16} style={{ color:'var(--accent3)' }} />
-          <span style={{ fontSize:'14px', fontWeight:'600' }}>Just tell us what you want</span>
-          <span style={{ fontSize:'11px', padding:'2px 7px', background:'var(--accent-bg)', color:'var(--accent3)', border:'1px solid var(--accent-border)', borderRadius:'4px' }}>NLU Smart</span>
-        </div>
-        <p style={{ fontSize:'12px', color:'var(--text3)', marginBottom:'12px' }}>Type anything — AI understands your intent and builds the roadmap</p>
-        <div style={{ display:'flex', gap:'8px' }}>
-          <input
-            className="input" style={{ flex:1 }}
-            placeholder="e.g. I want to become a data analyst in 30 days, I am a student..."
-            value={smartInput}
-            onChange={e => setSmartInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && runNLU()}
-          />
-          <button onClick={runNLU} disabled={nluLoading || !smartInput.trim()} className="btn btn-primary">
-            {nluLoading ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />}
-            {nluLoading ? 'Parsing...' : 'Parse'}
-          </button>
-        </div>
-
-        {/* NLU Result */}
-        {nluResult && (
-          <div style={{ marginTop:'14px', background:'var(--bg3)', border:'1px solid var(--border2)', borderRadius:'8px', padding:'14px' }}>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'10px' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-                <CheckCircle2 size={14} style={{ color:'var(--green)' }} />
-                <span style={{ fontSize:'12px', fontWeight:'600', color:'var(--green)' }}>Intent understood</span>
-                <span style={{ fontSize:'11px', color:'var(--text3)' }}>({Math.round(nluResult.confidence * 100)}% confidence)</span>
-              </div>
-            </div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'10px' }}>
-              {[
-                { label:'Goal', val: nluResult.goal },
-                { label:'Duration', val: `${nluResult.days} days` },
-                { label:'Hours/Day', val: `${nluResult.hoursPerDay} hrs` },
-                { label:'Focus', val: nluResult.focusAreas || 'Auto-detect' },
-              ].map(({ label, val }) => (
-                <div key={label} style={{ background:'var(--bg4)', borderRadius:'6px', padding:'8px 10px' }}>
-                  <div style={{ fontSize:'10px', color:'var(--text4)', marginBottom:'2px', textTransform:'uppercase', letterSpacing:'0.06em' }}>{label}</div>
-                  <div style={{ fontSize:'12px', color:'var(--text1)', fontWeight:'500' }}>{val}</div>
-                </div>
-              ))}
-            </div>
-            {nluResult.suggestions?.length > 0 && (
-              <div style={{ marginBottom:'10px' }}>
-                {nluResult.suggestions.map((s: string, i: number) => (
-                  <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:'6px', fontSize:'12px', color:'var(--amber)', marginBottom:'4px' }}>
-                    <AlertCircle size={12} style={{ marginTop:'1px', flexShrink:0 }} /> {s}
-                  </div>
-                ))}
-              </div>
-            )}
-            <button onClick={applyNLU} className="btn btn-primary" style={{ width:'100%' }}>
-              <Sparkles size={14} /> Generate Roadmap with These Settings
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Mode cards */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px' }}>
-        <button onClick={() => setMode('ai')} style={{
-          background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'12px',
-          padding:'20px', textAlign:'left', cursor:'pointer', transition:'all 0.15s'
-        }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor='var(--accent-border)'; (e.currentTarget as HTMLElement).style.background='var(--bg3)'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor='var(--border)'; (e.currentTarget as HTMLElement).style.background='var(--bg2)'; }}
-        >
-          <div style={{ width:'36px', height:'36px', borderRadius:'9px', background:'var(--accent-bg)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'12px' }}>
-            <Sparkles size={18} style={{ color:'var(--accent3)' }} />
-          </div>
-          <div style={{ fontSize:'14px', fontWeight:'600', color:'var(--text1)', marginBottom:'5px' }}>AI Generator</div>
-          <div style={{ fontSize:'12px', color:'var(--text3)', lineHeight:'1.5' }}>Tell AI your goal — complete roadmap with daily tasks and resources</div>
-          <div style={{ fontSize:'12px', color:'var(--accent3)', marginTop:'10px', display:'flex', alignItems:'center', gap:'4px' }}>
-            Recommended <ChevronRight size={11} />
-          </div>
-        </button>
-
-        <button onClick={() => setMode('manual')} style={{
-          background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'12px',
-          padding:'20px', textAlign:'left', cursor:'pointer', transition:'all 0.15s'
-        }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor='var(--border2)'; (e.currentTarget as HTMLElement).style.background='var(--bg3)'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor='var(--border)'; (e.currentTarget as HTMLElement).style.background='var(--bg2)'; }}
-        >
-          <div style={{ width:'36px', height:'36px', borderRadius:'9px', background:'var(--bg4)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'12px' }}>
-            <PenLine size={18} style={{ color:'var(--text2)' }} />
-          </div>
-          <div style={{ fontSize:'14px', fontWeight:'600', color:'var(--text1)', marginBottom:'5px' }}>Manual Builder</div>
-          <div style={{ fontSize:'12px', color:'var(--text3)', lineHeight:'1.5' }}>Full control — define your own projects, tasks and schedule</div>
-          <div style={{ fontSize:'12px', color:'var(--text3)', marginTop:'10px', display:'flex', alignItems:'center', gap:'4px' }}>
-            Custom <ChevronRight size={11} />
-          </div>
-        </button>
-      </div>
-    </div>
-  )
-
   return (
-    <div style={{ padding:'36px 40px', maxWidth:'680px' }}>
-      <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'28px' }}>
-        <button onClick={() => setMode('choose')} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text3)', fontSize:'13px', display:'flex', alignItems:'center', gap:'4px', fontFamily:'var(--font)' }}>← Back</button>
-        <h1 style={{ fontSize:'18px', fontWeight:'700', margin:0 }}>
-          {mode === 'ai' ? '✦ AI Roadmap Generator' : '✎ Manual Roadmap Builder'}
-        </h1>
-      </div>
+    <div style={{ padding: '36px 40px', maxWidth: '860px' }}>
+      <h1 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '8px' }}>Universal AI Roadmap Builder</h1>
+      <p style={{ fontSize: '14px', color: 'var(--text3)', marginBottom: '28px' }}>
+        Build study plans for coding, school subjects, competitive exams, degrees, careers, languages, research, and more.
+      </p>
 
       {error && (
-        <div style={{ marginBottom:'16px', padding:'12px 14px', background:'var(--red-bg)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:'8px', fontSize:'13px', color:'var(--red)' }}>
+        <div style={{ marginBottom: '16px', padding: '12px 14px', background: 'var(--red-bg)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', fontSize: '13px', color: 'var(--red)' }}>
           {error}
         </div>
       )}
 
-      <ColorPicker />
+      {step === 1 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '14px', padding: '22px' }}>
+            <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '14px' }}>What is your goal?</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '18px' }}>
+              <button onClick={() => { setGoalType('short_term'); setStep(2) }} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px', textAlign: 'left', cursor: 'pointer' }}>
+                <CalendarDays size={18} style={{ marginBottom: '10px' }} />
+                <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '6px' }}>Short Term</div>
+                <div style={{ fontSize: '12px', color: 'var(--text3)' }}>Under 90 days. Best for learning a skill, quick revision, focused prep, or short projects.</div>
+              </button>
+              <button onClick={() => { setGoalType('long_term'); setStep(2) }} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px', textAlign: 'left', cursor: 'pointer' }}>
+                <GraduationCap size={18} style={{ marginBottom: '10px' }} />
+                <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '6px' }}>Long Term</div>
+                <div style={{ fontSize: '12px', color: 'var(--text3)' }}>90+ days. Best for exams, degrees, research, major career transitions, and structured preparation.</div>
+              </button>
+            </div>
 
-      {/* AI Form */}
-      {mode === 'ai' && (
-        <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
-          <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'10px', padding:'18px', display:'flex', flexDirection:'column', gap:'14px' }}>
-            <div>
-              <label className="label">Target Goal *</label>
-              <input className="input" placeholder="e.g. AI-Powered Data Analyst, Full Stack Developer..." value={ai.goal} onChange={e => setAI({...ai, goal:e.target.value})} />
-            </div>
-            <div>
-              <label className="label">Your Background *</label>
-              <textarea className="input" style={{ minHeight:'90px' }} placeholder="Your current skills, experience, education..." value={ai.background} onChange={e => setAI({...ai, background:e.target.value})} />
-            </div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px' }}>
-              <div>
-                <label className="label">Duration</label>
-                <select className="input" value={ai.days} onChange={e => setAI({...ai, days:e.target.value})}>
-                  {['15','30','60','90'].map(d => <option key={d} value={d}>{d} days</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="label">Hours / Day</label>
-                <select className="input" value={ai.hoursPerDay} onChange={e => setAI({...ai, hoursPerDay:e.target.value})}>
-                  {[2,3,4,5,6,7,8].map(h => <option key={h} value={h}>{h} hrs</option>)}
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="label">Focus Areas (optional)</label>
-              <input className="input" placeholder="e.g. Python + ML, SQL + Power BI, React + Node..." value={ai.focusAreas} onChange={e => setAI({...ai, focusAreas:e.target.value})} />
+            <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '10px' }}>Or just type your goal and AI will decide</div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                className="input"
+                style={{ flex: 1 }}
+                placeholder="I want to learn Python in 30 days, or crack UPSC in 2 years..."
+                value={smartGoal}
+                onChange={(e) => setSmartGoal(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && letAIDecide()}
+              />
+              <button className="btn btn-primary" onClick={letAIDecide} disabled={smartLoading || !smartGoal.trim()}>
+                {smartLoading ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />}
+                {smartLoading ? 'Understanding...' : 'AI understands'}
+              </button>
             </div>
           </div>
-          <button onClick={submitAI} disabled={loading} className="btn btn-primary btn-lg" style={{ width:'100%', justifyContent:'center' }}>
-            {loading ? <><Loader2 size={15} style={{ animation:'spin 0.7s linear infinite' }} /> Generating roadmap...</> : <><Sparkles size={15} /> Generate My Roadmap</>}
-          </button>
-          {loading && <p style={{ textAlign:'center', fontSize:'12px', color:'var(--text4)' }}>AI is building your personalized roadmap — 10-20 seconds</p>}
         </div>
       )}
 
-      {/* Manual Form */}
-      {mode === 'manual' && (
-        <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
-          <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'10px', padding:'18px', display:'flex', flexDirection:'column', gap:'14px' }}>
-            <div><label className="label">Title *</label><input className="input" placeholder="e.g. 30-Day Python Roadmap" value={manual.title} onChange={e => setManual({...manual, title:e.target.value})} /></div>
-            <div><label className="label">Goal *</label><input className="input" placeholder="e.g. Become a Python Developer" value={manual.goal} onChange={e => setManual({...manual, goal:e.target.value})} /></div>
-            <div><label className="label">Description</label><textarea className="input" style={{ minHeight:'60px' }} value={manual.description} onChange={e => setManual({...manual, description:e.target.value})} /></div>
-            <div><label className="label">Total Days</label><input className="input" type="number" min={1} max={365} value={manual.totalDays} onChange={e => setManual({...manual, totalDays:e.target.value})} /></div>
+      {step === 2 && goalType === 'short_term' && (
+        <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '14px', padding: '22px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <button onClick={() => setStep(1)} style={{ background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--text3)' }}>← Back</button>
+          <div style={{ fontSize: '18px', fontWeight: '600' }}>Short-Term Roadmap</div>
+          <input className="input" placeholder="Goal: Learn React / CAT quant practice / Python basics" value={shortTerm.goal} onChange={(e) => setShortTerm({ ...shortTerm, goal: e.target.value })} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <select className="input" value={shortTerm.currentLevel} onChange={(e) => setShortTerm({ ...shortTerm, currentLevel: e.target.value as CurrentLevel })}>
+              {levelOptions.map((level) => <option key={level} value={level}>{level}</option>)}
+            </select>
+            <input className="input" type="number" min={1} max={8} value={shortTerm.hoursPerDay} onChange={(e) => setShortTerm({ ...shortTerm, hoursPerDay: Number(e.target.value) })} placeholder="Hours per day" />
           </div>
-
-          {/* Projects */}
-          <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'10px', padding:'18px' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'12px' }}>
-              <label className="label" style={{ margin:0 }}>Projects</label>
-              <button onClick={() => setProjects([...projects, { name:'', startDay:'', endDay:'', color:'blue' }])} className="btn btn-ghost btn-sm"><Plus size={12} /> Add</button>
-            </div>
-            <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
-              {projects.map((p, i) => (
-                <div key={i} style={{ background:'var(--bg3)', borderRadius:'8px', padding:'12px', display:'flex', flexDirection:'column', gap:'8px' }}>
-                  <div style={{ display:'flex', gap:'8px' }}>
-                    <input className="input" style={{ flex:1 }} placeholder="Project name" value={p.name} onChange={e => { const a=[...projects]; a[i]={...a[i], name:e.target.value}; setProjects(a) }} />
-                    {projects.length > 1 && <button onClick={() => setProjects(projects.filter((_,j)=>j!==i))} className="btn btn-danger btn-sm btn-icon"><Minus size={13}/></button>}
-                  </div>
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
-                    <input className="input" type="number" placeholder="Start day" value={p.startDay} onChange={e => { const a=[...projects]; a[i]={...a[i], startDay:e.target.value}; setProjects(a) }} />
-                    <input className="input" type="number" placeholder="End day" value={p.endDay} onChange={e => { const a=[...projects]; a[i]={...a[i], endDay:e.target.value}; setProjects(a) }} />
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div>
+            <label className="label">Days: {shortTerm.duration}</label>
+            <input type="range" min={7} max={90} value={shortTerm.duration} onChange={(e) => setShortTerm({ ...shortTerm, duration: Number(e.target.value) })} style={{ width: '100%' }} />
           </div>
-
-          {/* Tasks */}
-          <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'10px', padding:'18px' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'12px' }}>
-              <label className="label" style={{ margin:0 }}>Tasks</label>
-              <button onClick={() => setTasks([...tasks, { day:'', title:'', description:'', projectIndex:'0' }])} className="btn btn-ghost btn-sm"><Plus size={12} /> Add Task</button>
-            </div>
-            <div style={{ display:'flex', flexDirection:'column', gap:'8px', maxHeight:'280px', overflowY:'auto' }}>
-              {tasks.map((t, i) => (
-                <div key={i} style={{ background:'var(--bg3)', borderRadius:'8px', padding:'10px', display:'flex', flexDirection:'column', gap:'6px' }}>
-                  <div style={{ display:'flex', gap:'6px' }}>
-                    <input className="input" style={{ width:'70px' }} type="number" placeholder="Day" value={t.day} onChange={e => { const a=[...tasks]; a[i]={...a[i], day:e.target.value}; setTasks(a) }} />
-                    <input className="input" style={{ flex:1 }} placeholder="Task title" value={t.title} onChange={e => { const a=[...tasks]; a[i]={...a[i], title:e.target.value}; setTasks(a) }} />
-                    <button onClick={() => setTasks(tasks.filter((_,j)=>j!==i))} className="btn btn-danger btn-sm btn-icon"><Minus size={13}/></button>
-                  </div>
-                  <select className="input" value={t.projectIndex} onChange={e => { const a=[...tasks]; a[i]={...a[i], projectIndex:e.target.value}; setTasks(a) }}>
-                    {projects.map((p,pi) => <option key={pi} value={pi}>{p.name || `Project ${pi+1}`}</option>)}
-                  </select>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <button onClick={submitManual} disabled={loading} className="btn btn-primary btn-lg" style={{ width:'100%', justifyContent:'center' }}>
-            {loading ? <><Loader2 size={15} style={{ animation:'spin 0.7s linear infinite' }} /> Creating...</> : <><PenLine size={15} /> Create Roadmap</>}
+          <select className="input" value={shortTerm.focusType} onChange={(e) => setShortTerm({ ...shortTerm, focusType: e.target.value as FocusType })}>
+            {focusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+          <textarea className="input" style={{ minHeight: '100px' }} placeholder="Background: what you already know, weak areas, constraints, school/class, etc." value={shortTerm.background} onChange={(e) => setShortTerm({ ...shortTerm, background: e.target.value })} />
+          <button className="btn btn-primary btn-lg" onClick={generateRoadmap} disabled={loading || !shortTerm.goal.trim()} style={{ justifyContent: 'center' }}>
+            {loading ? <><Loader2 size={15} className="animate-spin" /> Generating...</> : <><Sparkles size={15} /> Generate Short-Term Roadmap</>}
           </button>
         </div>
       )}
+
+      {step === 2 && goalType === 'long_term' && (
+        <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '14px', padding: '22px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <button onClick={() => setStep(1)} style={{ background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--text3)' }}>← Back</button>
+          <div style={{ fontSize: '18px', fontWeight: '600' }}>Long-Term Roadmap</div>
+          <input className="input" placeholder="Goal: UPSC Civil Services / MBBS prep / PhD Computer Science / CA Final" value={longTerm.goal} onChange={(e) => setLongTerm({ ...longTerm, goal: e.target.value })} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <input className="input" placeholder="Target date (optional): 2027-12-01" value={longTerm.targetDate} onChange={(e) => setLongTerm({ ...longTerm, targetDate: e.target.value })} />
+            <input className="input" type="number" min={91} max={1825} value={longTerm.duration} onChange={(e) => setLongTerm({ ...longTerm, duration: Number(e.target.value) })} placeholder="Duration in days" />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <select className="input" value={longTerm.currentLevel} onChange={(e) => setLongTerm({ ...longTerm, currentLevel: e.target.value as CurrentLevel })}>
+              {levelOptions.map((level) => <option key={level} value={level}>{level}</option>)}
+            </select>
+            <input className="input" type="number" min={1} max={8} value={longTerm.hoursPerDay} onChange={(e) => setLongTerm({ ...longTerm, hoursPerDay: Number(e.target.value) })} placeholder="Hours per day" />
+          </div>
+          <select className="input" value={longTerm.examType} onChange={(e) => setLongTerm({ ...longTerm, examType: e.target.value as ExamType })}>
+            {examTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+          <textarea className="input" style={{ minHeight: '100px' }} placeholder="Background: current preparation level, degree/class, completed topics, weak areas, etc." value={longTerm.background} onChange={(e) => setLongTerm({ ...longTerm, background: e.target.value })} />
+          <button className="btn btn-primary btn-lg" onClick={generateRoadmap} disabled={loading || !longTerm.goal.trim()} style={{ justifyContent: 'center' }}>
+            {loading ? <><Loader2 size={15} className="animate-spin" /> Generating...</> : <><Sparkles size={15} /> Generate Long-Term Roadmap</>}
+          </button>
+        </div>
+      )}
+
+      <div style={{ marginTop: '24px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '14px', padding: '18px' }}>
+        <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Examples</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '12px', color: 'var(--text3)' }}>
+          <div>Learn guitar basics in 60 days</div>
+          <div>Crack UPSC in 2 years</div>
+          <div>Prepare for class 10 maths finals</div>
+          <div>Build Python skills for data science</div>
+          <div>MBBS preparation roadmap</div>
+          <div>PhD computer science research plan</div>
+        </div>
+      </div>
     </div>
   )
 }

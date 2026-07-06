@@ -58,6 +58,8 @@ model Roadmap {
   goal        String
   description String?
   totalDays   Int         @default(30)
+  roadmapType RoadmapType @default(SHORT_TERM)
+  targetDate  DateTime?
   status      RoadmapStatus @default(ACTIVE)
   createdBy   CreateMethod  @default(MANUAL)
   createdAt   DateTime    @default(now())
@@ -67,9 +69,23 @@ model Roadmap {
 
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   projects    Project[]
+  phases      Phase[]
   tasks       Task[]
   reminders   Reminder[]
   report      Report?
+}
+
+model Phase {
+  id          String   @id @default(cuid())
+  roadmapId   String
+  name        String
+  order       Int
+  startWeek   Int
+  endWeek     Int
+  milestones  Json
+  topics      Json
+
+  roadmap     Roadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
 }
 
 model Project {
@@ -153,6 +169,20 @@ model Report {
   roadmap         Roadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
 }
 
+model GoalAnalytics {
+  id                 String   @id @default(cuid())
+  goalKey            String   @unique
+  goal               String
+  type               RoadmapType
+  durationDays       Int
+  popularityCount    Int      @default(1)
+  completedCount     Int      @default(0)
+  totalCompletionRate Float   @default(0)
+  totalDaysTaken     Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
 enum RoadmapStatus {
   ACTIVE
   COMPLETED
@@ -163,4 +193,9 @@ enum RoadmapStatus {
 enum CreateMethod {
   MANUAL
   AI
+}
+
+enum RoadmapType {
+  SHORT_TERM
+  LONG_TERM
 }

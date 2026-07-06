@@ -40,7 +40,8 @@ export async function POST(req: NextRequest) {
       background: data.background,
       days: data.days || 30,
       hoursPerDay: data.hoursPerDay || 7,
-      focusAreas: data.focusAreas
+      focusAreas: data.focusAreas,
+      studyDomain: data.studyDomain
     }
 
     const generated = await generateRoadmapWithAI(input)

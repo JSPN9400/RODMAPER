@@ -1,3 +1,10 @@
+/**
+ * RoadMaper — AI-powered learning roadmap platform.
+ * Copyright (c) 2026 JSPN. All rights reserved.
+ * @author JSPN
+ * @license MIT — see LICENSE file in the project root.
+ */
+
 'use client'
 import { useEffect, useState } from 'react'
 import { Brain, TrendingUp, Target, RefreshCw, Lightbulb, ChevronRight, Zap } from 'lucide-react'

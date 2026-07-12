@@ -1,3 +1,10 @@
+/**
+ * RoadMaper — AI-powered learning roadmap platform.
+ * Copyright (c) 2026 JSPN. All rights reserved.
+ * @author JSPN
+ * @license MIT — see LICENSE file in the project root.
+ */
+
 'use client'
 
 import { useState } from 'react'

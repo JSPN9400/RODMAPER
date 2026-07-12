@@ -1,3 +1,10 @@
+/**
+ * RoadMaper — AI-powered learning roadmap platform.
+ * Copyright (c) 2026 JSPN. All rights reserved.
+ * @author JSPN
+ * @license MIT — see LICENSE file in the project root.
+ */
+
 import { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import GithubProvider from 'next-auth/providers/github'

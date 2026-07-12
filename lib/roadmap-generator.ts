@@ -1,3 +1,10 @@
+/**
+ * RoadMaper — AI-powered learning roadmap platform.
+ * Copyright (c) 2026 JSPN. All rights reserved.
+ * @author JSPN
+ * @license MIT — see LICENSE file in the project root.
+ */
+
 import Groq from 'groq-sdk'
 
 export type GoalType = 'short_term' | 'long_term'

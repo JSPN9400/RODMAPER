@@ -127,7 +127,7 @@ License: **MIT** (see [`LICENSE`](./LICENSE))
 | `roadmap-generator.ts` | The current AI generator. Talks to Groq and returns strongly-typed `ShortTermRoadmap` (day-by-day tasks) or `LongTermRoadmap` (phases with weekly milestones). Also exports `detectGoalType()`, a keyword heuristic (UPSC, NEET, PhD, "3 years", etc.) that guesses short-term vs long-term when the user doesn't pick explicitly. Used by `app/api/roadmaps/generate/route.ts`. |
 | `goal-analytics.ts` | Writes/updates the `GoalAnalytics` table — tracks how popular a given goal text is and (via `updateSuccessRate`) how often people who start it actually finish it. Currently write-only; nothing reads this table back into the UI yet. |
 | `ai-generator.ts` | An older/parallel AI generator (`generateRoadmapWithAI`, `parseUserIntent`, `generateCompletionSummary`, `generateResumeBullets`). `parseUserIntent` still powers the "let AI decide" box on the Create page (`/api/nlu`) and `generateCompletionSummary` still powers report summaries. The roadmap-creation function `generateRoadmapWithAI` itself is now dead code — the Create page calls `/api/roadmaps/generate` (→ `roadmap-generator.ts`), not the legacy `mode: 'ai'` path in `app/api/roadmaps/route.ts` that calls this function. Safe to delete once you've confirmed nothing else references it. |
-| `report-generator.ts` | Computes a roadmap's completion report (completion %, max streak, top skills, per-project breakdown, timeline, AI summary) and upserts it into the `Report` table. Functionally a duplicate of the logic inlined in `app/api/reports/route.ts`; kept as a standalone function in case you want to trigger report generation from somewhere other than the API route (e.g. a cron job on roadmap completion). |
+| `report-generator.ts` | **Removed** — see §5 for why. |
 | `notifications.ts` | Web Push helpers. `sendPushToUser` sends a push payload to every subscription a user has (and prunes subscriptions that fail, e.g. because the user uninstalled/blocked notifications). `scheduleReminders` is meant to be invoked on a schedule (every minute, via an external cron or a Vercel Cron Job) — it finds all `Reminder`s whose `time`/`days` match "now" and pushes a notification for each one's next incomplete task. **Note:** nothing in this repo currently calls `scheduleReminders()` on a timer — you need to wire up a Vercel Cron Job (or similar) hitting a small API route that calls it. |
 
 ### `types/`
@@ -241,8 +241,14 @@ License: **MIT** (see [`LICENSE`](./LICENSE))
   `generateCompletionSummary` (→ reports) are still used; its unused
   `generateRoadmapWithAI` export can be deleted too if you want to fully
   clean it up.
-- **`Settings` model has no API route yet** — the `/settings` page is
-  front-end only.
+- **Removed:** `lib/report-generator.ts` (`generateReport`) was dead code —
+  no API route imported it (report generation is handled entirely inline in
+  `app/api/reports/route.ts`). It also imported two types
+  (`TimelinePoint`, `ProjectReportData`) that were never added to
+  `types/index.ts`, which broke the Vercel build. Deleted rather than
+  patched, since nothing referenced it. If you want report-generation logic
+  as a standalone, reusable function again (e.g. to call from a cron job),
+  recreate it and give it real types instead of re-adding this file as-is.
 - **`scheduleReminders()` needs a scheduler** — nothing currently calls it on
   a timer. Wire it up with a Vercel Cron Job (or any external scheduler)
   hitting a small authenticated API route once a minute.

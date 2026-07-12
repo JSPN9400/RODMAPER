@@ -92,7 +92,7 @@ export default function DashboardPage() {
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: rm.colorHex || '#7c3aed' }} />
+                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: rm.color || '#7c3aed' }} />
                       <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--green)', letterSpacing: '0.08em' }}>{rm.status}</span>
                     </div>
                     <div style={{ fontSize: '17px', fontWeight: '700', marginBottom: '4px' }}>{rm.title}</div>
@@ -102,7 +102,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-                  <ProgressRing value={pct} color={rm.colorHex || '#7c3aed'} />
+                  <ProgressRing value={pct} color={rm.color || '#7c3aed'} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '4px' }}>Today</div>
                     <div style={{ fontSize: '15px', fontWeight: '700', marginBottom: '4px' }}>{preview}</div>
@@ -111,7 +111,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div style={{ height: '8px', background: 'var(--bg4)', borderRadius: '999px', overflow: 'hidden', marginBottom: '14px' }}>
-                  <div style={{ height: '100%', width: `${pct}%`, background: rm.colorHex || 'var(--grad)', borderRadius: '999px' }} />
+                  <div style={{ height: '100%', width: `${pct}%`, background: rm.color || 'var(--grad)', borderRadius: '999px' }} />
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

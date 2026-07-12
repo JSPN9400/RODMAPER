@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
   const tasks = roadmap.tasks
   const done = tasks.filter(t => t.done)
-  const completionRate = Math.round((done.length / tasks.length) * 100)
+  const completionRate = tasks.length > 0 ? Math.round((done.length / tasks.length) * 100) : 0
 
   // Streak
   const days = done.map(t => t.day).sort((a,b) => a-b)

@@ -17,7 +17,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const roadmap = await prisma.roadmap.findFirst({
     where: { id, userId: session.user.id },
-    include: { projects: { orderBy: { order: 'asc' } }, tasks: { orderBy: { day: 'asc' } }, reminders: true, report: true }
+    include: { projects: { orderBy: { order: 'asc' } }, tasks: { orderBy: { day: 'asc' } }, reminders: true, report: true, phases: { orderBy: { order: 'asc' } } }
   })
   if (!roadmap) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json(roadmap)

@@ -249,6 +249,10 @@ License: **MIT** (see [`LICENSE`](./LICENSE))
   patched, since nothing referenced it. If you want report-generation logic
   as a standalone, reusable function again (e.g. to call from a cron job),
   recreate it and give it real types instead of re-adding this file as-is.
+- **Fixed:** Potential division-by-zero (`NaN` completion rate) in `/api/reports` and `/api/self-learn` API routes for roadmaps with 0 tasks (e.g. `LONG_TERM` roadmaps).
+- **Fixed:** Reminders UI displayed `· undefined` for the roadmap title when a new reminder was created. It now resolves the title from the loaded roadmaps state on creation.
+- **Fixed:** `LONG_TERM` roadmaps loaded an empty checklist in the UI because they are structured into weeks/phases rather than daily tasks. The frontend `app/roadmap/[id]/page.tsx` was updated to fetch phase relationships and render week ranges, milestones, and topics checklists for long-term roadmaps.
+- **Cleaned:** Purged the accidental `{app` typo folder structure from the project root.
 - **`scheduleReminders()` needs a scheduler** — nothing currently calls it on
   a timer. Wire it up with a Vercel Cron Job (or any external scheduler)
   hitting a small authenticated API route once a minute.

@@ -192,7 +192,7 @@ License: **MIT** (see [`LICENSE`](./LICENSE))
 | File | Method(s) | Purpose |
 |---|---|---|
 | `app/api/auth/[...nextauth]/route.ts` | GET, POST | NextAuth's catch-all handler — powers `/api/auth/signin`, `/api/auth/callback/google`, `/api/auth/callback/github`, `/api/auth/session`, etc. |
-| `app/api/roadmaps/route.ts` | GET, POST | `GET`: list the signed-in user's roadmaps with task counts, done counts, and next-task preview. `POST`: **legacy** manual/AI roadmap creation path (kept for backward compatibility; the Create page now uses `/api/roadmaps/generate` instead — see §5). |
+| `app/api/roadmaps/route.ts` | GET | List the signed-in user's roadmaps with task counts, done counts, and next-task preview — powers the dashboard. (Used to also have a `POST` handler for legacy manual/AI roadmap creation; removed — see §5.) |
 | `app/api/roadmaps/[id]/route.ts` | GET, PATCH, DELETE | `GET`: full roadmap detail (projects, tasks, reminders, report). `PATCH`: update title/goal/status/color. `DELETE`: remove a roadmap (cascades to its projects/tasks/reminders/phases/report). |
 | `app/api/roadmaps/generate/route.ts` | POST | **Current** roadmap-creation endpoint. Calls `lib/roadmap-generator.ts`, persists a short-term (`Task`/`Project`) or long-term (`Phase`/`Project`) roadmap, and logs analytics via `lib/goal-analytics.ts`. |
 | `app/api/tasks/[id]/route.ts` | PATCH | Toggle a task's `done` state (and notes); auto-completes the parent roadmap when every task is done. |
@@ -231,12 +231,16 @@ License: **MIT** (see [`LICENSE`](./LICENSE))
   (and could fail the Vercel build entirely, since `build` = `prisma generate
   && next build` and TypeScript type-checks against the Prisma Client). Both
   models now exist in the schema.
-- **Two roadmap-creation code paths exist:** the old `POST /api/roadmaps/route.ts`
-  (`mode: 'ai'` / manual, using `lib/ai-generator.ts`) and the new
-  `POST /api/roadmaps/generate/route.ts` (using `lib/roadmap-generator.ts`).
-  Only the second one is called by the current `/create` UI. The old path is
-  dead code kept for backward compatibility — safe to delete if you don't
-  need it.
+- **Removed:** `app/api/roadmaps/route.ts` used to also export a `POST`
+  handler (legacy manual + `mode: 'ai'` creation via `lib/ai-generator.ts`).
+  It was never called by the frontend (the Create page has always used
+  `POST /api/roadmaps/generate`) and its loosely-typed `any` data caused a
+  `noImplicitAny` TypeScript build failure on Vercel. It has been deleted;
+  this file now only exports `GET` (used by the dashboard). `lib/ai-generator.ts`
+  is kept because `parseUserIntent` (→ `/api/nlu`) and
+  `generateCompletionSummary` (→ reports) are still used; its unused
+  `generateRoadmapWithAI` export can be deleted too if you want to fully
+  clean it up.
 - **`Settings` model has no API route yet** — the `/settings` page is
   front-end only.
 - **`scheduleReminders()` needs a scheduler** — nothing currently calls it on

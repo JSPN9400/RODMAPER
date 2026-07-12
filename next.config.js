@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  compress: true,
+  poweredByHeader: false,
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
@@ -7,12 +9,8 @@ const nextConfig = {
     ],
     formats: ['image/avif', 'image/webp'],
   },
-  compress: true,
-  poweredByHeader: false,
-  reactStrictMode: true,
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
 }
-
 module.exports = nextConfig

@@ -1,4 +1,3 @@
-// lib/auth.ts
 import { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import GithubProvider from 'next-auth/providers/github'
@@ -20,9 +19,7 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
   callbacks: {
     async session({ session, token }) {
-      if (token.sub && session.user) {
-        (session.user as any).id = token.sub
-      }
+      if (token.sub && session.user) (session.user as any).id = token.sub
       return session
     },
     async jwt({ token, user }) {
@@ -30,8 +27,6 @@ export const authOptions: NextAuthOptions = {
       return token
     }
   },
-  pages: {
-    signIn: '/login',
-  },
+  pages: { signIn: '/login' },
   secret: process.env.NEXTAUTH_SECRET,
 }

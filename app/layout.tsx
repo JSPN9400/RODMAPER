@@ -7,7 +7,7 @@ import SessionProvider from '@/components/ui/SessionProvider'
 
 export const metadata: Metadata = {
   title: 'RoadMaper — AI Learning System',
-  description: 'Build personalized learning roadmaps, track daily progress, and land your dream role',
+  description: 'Build personalized learning roadmaps for any subject, skill or exam.',
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -15,16 +15,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <meta name="theme-color" content="#09090b" />
+        <meta name="theme-color" content="#000000" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
       <body>
         <SessionProvider session={session}>
           {session ? (
             <div style={{ display: 'flex', minHeight: '100vh' }}>
               <Sidebar user={session.user} />
-              <main className="page-shell" style={{ flex: 1, marginLeft: '240px', minHeight: '100vh', overflowY: 'auto', background: 'var(--bg)' }}>
+              <main className="page-shell" style={{
+                flex: 1, marginLeft: '220px',
+                minHeight: '100vh', background: 'var(--bg)'
+              }}>
                 {children}
               </main>
             </div>

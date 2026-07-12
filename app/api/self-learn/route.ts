@@ -1,67 +1,82 @@
-// app/api/self-learn/route.ts
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { privateJson } from '@/lib/api-response'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { selfLearnFromProgress, suggestNextTask } from '@/lib/ai-generator'
+import Groq from 'groq-sdk'
+
+function getGroq() {
+  return new Groq({ apiKey: process.env.GROQ_API_KEY! })
+}
+
+async function groqCall(prompt: string): Promise<string> {
+  const res = await getGroq().chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    max_tokens: 1200, temperature: 0.7,
+    messages: [{ role: 'user', content: prompt }]
+  })
+  return res.choices[0]?.message?.content || ''
+}
+
+function parseJSON(text: string): any {
+  let c = text.replace(/```json|```/g, '').trim()
+  const s = Math.max(c.indexOf('{'), c.indexOf('['))
+  const e = Math.max(c.lastIndexOf('}'), c.lastIndexOf(']'))
+  if (s !== -1 && e !== -1) c = c.slice(s, e + 1)
+  return JSON.parse(c)
+}
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return privateJson({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { roadmapId, action } = await req.json()
-
   const roadmap = await prisma.roadmap.findFirst({
     where: { id: roadmapId, userId: session.user.id },
     include: { tasks: true }
   })
-  if (!roadmap) return privateJson({ error: 'Not found' }, { status: 404 })
+  if (!roadmap) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const tasks = roadmap.tasks
-  const doneTasks = tasks.filter(t => t.done)
-  const skippedDays = tasks.filter(t => !t.done).map(t => t.day)
-  const doneDays = doneTasks.map(t => t.day).sort((a, b) => a - b)
+  const done = tasks.filter(t => t.done)
+  const doneDays = done.map(t => t.day).sort((a,b) => a-b)
+  const completionRate = Math.round(done.length / tasks.length * 100)
 
-  // Calculate streak
   let streakMax = 0, cur = 0
   for (let i = 0; i < doneDays.length; i++) {
-    if (i === 0 || doneDays[i] - doneDays[i-1] === 1) { cur++; streakMax = Math.max(streakMax, cur) }
-    else cur = 1
+    if (i === 0 || doneDays[i] - doneDays[i-1] === 1) { cur++; streakMax = Math.max(streakMax, cur) } else cur = 1
   }
 
-  // Skills from tech stack
-  const skillCount: Record<string, number> = {}
-  tasks.forEach(t => {
-    if (t.techStack && Array.isArray(t.techStack)) {
-      (t.techStack as any[]).forEach((tech: any) => {
-        if (tech.name) skillCount[tech.name] = (skillCount[tech.name] || 0) + 1
-      })
-    }
-  })
-  const topSkills = Object.entries(skillCount).sort((a,b) => b[1]-a[1]).slice(0,6).map(([n]) => n)
-
-  const completionRate = Math.round(doneTasks.length / tasks.length * 100)
-  const avgDaysPerWeek = doneDays.length > 0 ? Math.round(doneDays.length / Math.max(1, Math.ceil(roadmap.totalDays / 7))) : 0
+  const skillCount: Record<string,number> = {}
+  tasks.forEach(t => { if (t.techStack && Array.isArray(t.techStack)) (t.techStack as any[]).forEach((s:any) => { if (s.name) skillCount[s.name] = (skillCount[s.name]||0)+1 }) })
+  const topSkills = Object.entries(skillCount).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([n])=>n)
 
   if (action === 'suggest') {
-    const completedTopics = doneTasks.map(t => t.title)
-    const skippedTopics = tasks.filter(t => !t.done).slice(0, 5).map(t => t.title)
-    const daysLeft = tasks.filter(t => !t.done).length
-    const suggestion = await suggestNextTask({ completedTopics, skippedTopics, goal: roadmap.goal, daysLeft })
-    return privateJson(suggestion)
+    const completed = done.map(t => t.title).slice(-5)
+    const skipped = tasks.filter(t => !t.done).slice(0,5).map(t => t.title)
+    try {
+      const text = await groqCall(`Learning coach. Suggest best next task.
+Goal: ${roadmap.goal}
+Completed: ${completed.join(', ')}
+Struggling: ${skipped.join(', ')}
+Days left: ${tasks.filter(t=>!t.done).length}
+Return ONLY JSON: {"suggestedTopic":"topic","reason":"why","resources":[{"name":"name","url":"https://url.com"}],"estimatedHours":2}`)
+      return NextResponse.json(parseJSON(text))
+    } catch {
+      return NextResponse.json({ suggestedTopic: 'Review previous topics', reason: 'Consolidate your learning', resources: [], estimatedHours: 2 })
+    }
   }
 
-  // Default: full self-learn analysis
-  const analysis = await selfLearnFromProgress({
-    roadmapTitle: roadmap.title,
-    completionRate,
-    skippedDays,
-    doneDays,
-    topSkills,
-    streakMax,
-    avgDaysPerWeek
-  })
-
-  return privateJson({ ...analysis, completionRate, streakMax, topSkills })
+  // Full analysis
+  try {
+    const text = await groqCall(`Learning coach. Analyze student progress.
+Roadmap: ${roadmap.title}
+Completion: ${completionRate}%
+Days done: ${done.length}, Max streak: ${streakMax}
+Skipped days: ${tasks.filter(t=>!t.done).length}
+Skills: ${topSkills.join(', ')}
+Return ONLY JSON: {"insights":["insight1","insight2"],"adjustments":[],"nextSteps":["step1","step2"],"motivationScore":75,"learningStyle":"Consistent Learner"}`)
+    return NextResponse.json({ ...parseJSON(text), completionRate, streakMax, topSkills })
+  } catch {
+    return NextResponse.json({ insights:['Keep going!'], adjustments:[], nextSteps:['Complete today task'], motivationScore:70, learningStyle:'Active Learner', completionRate, streakMax, topSkills })
+  }
 }

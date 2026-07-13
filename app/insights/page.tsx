@@ -135,7 +135,7 @@ export default function InsightsPage() {
                 <Zap size={14} style={{ color:'var(--accent3)' }} />
                 <span style={{ fontSize:'13px', fontWeight:'700' }}>Smart Task Suggestion</span>
               </div>
-              <button onClick={getSuggestion} disabled={sugLoading} className="btn btn-ghost btn-sm">
+              <button onClick={getSuggestion} disabled={sugLoading || !selected} className="btn btn-ghost btn-sm">
                 {sugLoading?<RefreshCw size={12} style={{ animation:'spin 0.7s linear infinite' }}/>:<Zap size={12}/>}
                 {sugLoading?'Thinking...':'Get Suggestion'}
               </button>

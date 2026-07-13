@@ -139,8 +139,45 @@ export async function POST(req: NextRequest) {
         })),
       },
     },
-    include: { phases: true, projects: true },
+    include: { phases: true, projects: { orderBy: { order: 'asc' } } },
   })
+
+  // Long-term roadmaps only have weekly granularity from the AI (weeklyMilestones),
+  // not daily tasks. Turn each weekly milestone into one checkable Task, linked to
+  // its phase's matching Project, so the dashboard/today/reports/checklist — which
+  // are all built around the Task model — actually have something to show.
+  const taskData: Prisma.TaskCreateManyInput[] = []
+  roadmap.phases.forEach((phase) => {
+    const project = created.projects.find((p) => p.order === phase.order - 1)
+    const techStack = (phase.keyTopicsChecklist || [])
+      .slice(0, 4)
+      .map((topic) => ({ name: topic, type: 'other' }))
+    const resources = (phase.resources || [])
+      .filter((r) => r.url)
+      .map((r) => ({ name: r.name, url: r.url as string }))
+
+    ;(phase.weeklyMilestones || []).forEach((m) => {
+      const day = Math.max(1, (m.week - 1) * 7 + 1)
+      const description = [
+        m.milestone,
+        m.practiceTest ? `Practice test: ${m.practiceTest}` : null,
+        m.review ? `Review: ${m.review}` : null,
+      ].filter(Boolean).join('\n\n')
+
+      taskData.push({
+        roadmapId: created.id,
+        projectId: project?.id || null,
+        day,
+        title: m.focus || `Week ${m.week}`,
+        description,
+        techStack: techStack as unknown as Prisma.InputJsonValue,
+        resources: resources as unknown as Prisma.InputJsonValue,
+      })
+    })
+  })
+  if (taskData.length > 0) {
+    await prisma.task.createMany({ data: taskData })
+  }
 
   await trackGoalPopularity(goal, 'LONG_TERM', totalDays)
   return privateJson({ type: resolvedType, roadmap, id: created.id }, { status: 201 })

@@ -40,8 +40,11 @@ export default function TodayPage() {
     })
     setCelebrate(true)
     setTimeout(() => setCelebrate(false), 500)
-    setItems((prev) => prev.filter((item) => item.nextTask?.id !== taskId))
-    setIndex((prev) => Math.max(0, Math.min(prev, items.length - 2)))
+    setItems((prev) => {
+      const next = prev.filter((item) => item.nextTask?.id !== taskId)
+      setIndex((i) => Math.max(0, Math.min(i, next.length - 1)))
+      return next
+    })
   }
 
   function skipCard() {

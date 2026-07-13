@@ -88,9 +88,10 @@ License: **MIT** (see [`LICENSE`](./LICENSE))
     `lib/report-generator.ts::generateReport`) to compute completion rate,
     max streak, top skills, and an AI-written summary, stored in the
     `Report` table (one per roadmap) and rendered as a shareable summary.
-12. **Settings** — `app/settings/page.tsx` is a placeholder UI for timezone /
-    notification preferences (the `Settings` table exists in the schema for
-    this; wiring it up to an API route is a good next task).
+12. **Settings** — `app/settings/page.tsx` lets the user pick a timezone,
+    persisted via `GET`/`PATCH /api/settings`. (`notificationsEnabled` and
+    `defaultReminderTime` also exist on the `Settings` model and API route
+    for future use; only timezone is currently exposed in the UI.)
 
 ---
 
@@ -185,7 +186,7 @@ License: **MIT** (see [`LICENSE`](./LICENSE))
 | `app/reminders/` | `/reminders` | Create/list/delete daily reminders per roadmap (time of day + which days of the week). |
 | `app/reports/` | `/reports` | Wraps `ReportsContent.tsx` in a `<Suspense>` boundary (required because it reads the URL's `roadmapId` query param via `useSearchParams`). |
 | `app/reports/ReportsContent.tsx` | — | The actual reports UI: pick a roadmap, generate/view its completion report (completion %, streak, top skills, AI summary, share). |
-| `app/settings/` | `/settings` | User preference UI (timezone, etc.) — currently front-end only; not yet wired to a backend route. |
+| `app/settings/` | `/settings` | Timezone preference UI, persisted via `app/api/settings/route.ts`. |
 
 **API routes** (`app/api/**/route.ts` — server-only, called via `fetch()` from the pages above)
 
@@ -202,6 +203,7 @@ License: **MIT** (see [`LICENSE`](./LICENSE))
 | `app/api/push/route.ts` | POST | Save a browser's Web Push subscription (`endpoint`/`p256dh`/`auth`) so `lib/notifications.ts` can push to it later. |
 | `app/api/nlu/route.ts` | POST | Parses a free-text goal ("I want to learn Python in 30 days") into structured fields (goal, background, days, hoursPerDay) via Groq — powers the "AI understands" box on the Create page. |
 | `app/api/self-learn/route.ts` | POST | Two modes: `action: 'suggest'` (recommend the next topic) and full analysis (insights, motivation score, learning style) — powers `/insights`. |
+| `app/api/settings/route.ts` | GET, PATCH | Get-or-create and update the signed-in user's `Settings` row — powers `/settings`. |
 
 ---
 
@@ -218,7 +220,7 @@ License: **MIT** (see [`LICENSE`](./LICENSE))
 | `GoalAnalytics` | Aggregate, cross-user stats per unique goal text — popularity count, completion count/rate, typical duration. Not yet surfaced in any UI. |
 | `Reminder` | A recurring daily-reminder rule attached to a roadmap (time, enabled days, optional custom message). |
 | `PushSubscription` | A browser's Web Push subscription for a user. |
-| `Settings` | Per-user preferences (notifications on/off, default reminder time, timezone, theme). Not yet wired to an API route. |
+| `Settings` | Per-user preferences (notifications on/off, default reminder time, timezone, theme). Read/written via `app/api/settings/route.ts`; the Settings page currently exposes only the timezone field. |
 | `Report` | One generated completion report per roadmap (completion %, max streak, top skills, per-project + timeline JSON, AI summary). |
 
 ---
@@ -249,13 +251,44 @@ License: **MIT** (see [`LICENSE`](./LICENSE))
   patched, since nothing referenced it. If you want report-generation logic
   as a standalone, reusable function again (e.g. to call from a cron job),
   recreate it and give it real types instead of re-adding this file as-is.
-- **Fixed:** Potential division-by-zero (`NaN` completion rate) in `/api/reports` and `/api/self-learn` API routes for roadmaps with 0 tasks (e.g. `LONG_TERM` roadmaps).
-- **Fixed:** Reminders UI displayed `· undefined` for the roadmap title when a new reminder was created. It now resolves the title from the loaded roadmaps state on creation.
-- **Fixed:** `LONG_TERM` roadmaps loaded an empty checklist in the UI because they are structured into weeks/phases rather than daily tasks. The frontend `app/roadmap/[id]/page.tsx` was updated to fetch phase relationships and render week ranges, milestones, and topics checklists for long-term roadmaps.
-- **Cleaned:** Purged the accidental `{app` typo folder structure from the project root.
 - **`scheduleReminders()` needs a scheduler** — nothing currently calls it on
   a timer. Wire it up with a Vercel Cron Job (or any external scheduler)
   hitting a small authenticated API route once a minute.
+- **Fixed (full-codebase audit):** a pass through every file turned up and
+  fixed several functional bugs that had shipped silently:
+  - Long-term roadmap generation created `Phase`/`Project` rows but **zero
+    `Task` rows**, so the checklist, dashboard progress, `/today`, and
+    reports were permanently empty for every long-term roadmap. Fixed by
+    turning each phase's weekly milestones into one `Task` per week.
+  - The dashboard read `rm.colorHex`, a field that has never existed in the
+    API response (the real field is `color`, a name like `"violet"`) — every
+    roadmap card always rendered the same hardcoded color. Fixed to resolve
+    `color` through the same name→hex map used on the roadmap detail page.
+  - `--accent-bg` / `--accent-border` CSS variables were used (reminder
+    day-highlights, report skill chips, the AI-summary card border) but
+    never defined. Added them.
+  - The `pulse-dot` keyframe used by the AI Insights loading animation was
+    never defined. Added it.
+  - `.desktop-only` (the sidebar's wrapper class) only had a `display: none`
+    rule inside the mobile media query — on desktop it had no `display`
+    value at all, so the sidebar's `flexDirection: column` inline style had
+    no effect and the user card at the bottom wasn't actually flex-anchored.
+    Added a base `display: flex`.
+  - `completionRate` in both the reports and self-learn routes divided by
+    `tasks.length` with no guard, producing `NaN` for any roadmap with no
+    tasks yet. Guarded both.
+  - `/today`'s `markDone()` computed the next card index using the stale
+    `items.length` from the render closure instead of the array's length
+    after removal, occasionally skipping a card. Fixed to compute the index
+    from the actual post-filter array.
+  - The AI Insights "Get Suggestion" button was missing a `!selected` guard
+    (unlike the "Analyze" button next to it), so it could fire a request
+    with an empty `roadmapId` when there were no active roadmaps.
+  - The marketing footer had mangled UTF-8 characters (`Â©`, `Â·` instead of
+    `©`, `·`) from an encoding round-trip. Fixed.
+  - The Settings page's "Save Settings" button didn't persist anything — it
+    just showed a fake "Saved!" toast. Added `app/api/settings/route.ts`
+    (`GET`/`PATCH`) and wired the page to it (see §3, §4).
 
 ---
 

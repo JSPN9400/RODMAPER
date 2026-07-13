@@ -6,12 +6,36 @@
  */
 
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Save, Key, Globe, Check, ExternalLink } from 'lucide-react'
 
 export default function SettingsPage() {
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [tz, setTz] = useState('Asia/Kolkata')
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((r) => r.json())
+      .then((d) => { if (d?.timezone) setTz(d.timezone) })
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function save() {
+    setSaving(true)
+    try {
+      await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timezone: tz }),
+      })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <div style={{ padding:'20px 16px 80px', maxWidth:'600px', margin:'0 auto' }}>
@@ -24,7 +48,7 @@ export default function SettingsPage() {
             <Globe size={15} style={{ color:'var(--accent3)' }} />
             <span style={{ fontSize:'13px', fontWeight:'700' }}>Timezone</span>
           </div>
-          <select className="input" value={tz} onChange={e => setTz(e.target.value)}>
+          <select className="input" value={tz} onChange={e => setTz(e.target.value)} disabled={loading}>
             <option value="Asia/Kolkata">India (IST) +5:30</option>
             <option value="UTC">UTC +0:00</option>
             <option value="America/New_York">US Eastern</option>
@@ -51,8 +75,8 @@ export default function SettingsPage() {
           </a>
         </div>
 
-        <button onClick={() => { setSaved(true); setTimeout(()=>setSaved(false),2000) }} className="btn btn-primary" style={{ alignSelf:'flex-start' }}>
-          {saved ? <><Check size={14}/> Saved!</> : <><Save size={14}/> Save Settings</>}
+        <button onClick={save} disabled={saving || loading} className="btn btn-primary" style={{ alignSelf:'flex-start' }}>
+          {saved ? <><Check size={14}/> Saved!</> : <><Save size={14}/> {saving ? 'Saving...' : 'Save Settings'}</>}
         </button>
       </div>
     </div>

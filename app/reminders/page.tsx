@@ -33,8 +33,7 @@ export default function RemindersPage() {
     if (!form.roadmapId) return
     const res = await fetch('/api/reminders', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(form) })
     const r = await res.json()
-    const matched = roadmaps.find((rm: any) => rm.id === form.roadmapId)
-    setReminders(p => [...p, { ...r, roadmapTitle: matched ? matched.title : '' }])
+    setReminders(p => [...p, r])
     setSaved(true); setTimeout(() => setSaved(false), 2000)
   }
 

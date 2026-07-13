@@ -28,6 +28,8 @@
   --accent: #7c3aed;
   --accent2: #9333ea;
   --accent3: #a855f7;
+  --accent-bg: rgba(124,58,237,0.1);
+  --accent-border: rgba(124,58,237,0.25);
   --grad: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f64f59 100%);
   --grad-warm: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   --grad-cool: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
@@ -123,6 +125,11 @@ a {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.3; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
 }
 
 .animate-bounce-in { animation: bounce-in 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
@@ -279,6 +286,10 @@ select.input { appearance: none; cursor: pointer; }
   border-top-color: var(--accent3);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
+}
+
+.desktop-only {
+  display: flex;
 }
 
 @media (max-width: 768px) {

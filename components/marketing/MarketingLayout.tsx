@@ -5,10 +5,25 @@
  * @license MIT — see LICENSE file in the project root.
  */
 
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import MarketingNav from './MarketingNav'
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  if (!isMounted) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#09090b', color: '#fafafa' }} />
+    )
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#09090b', color: '#fafafa', fontFamily: "'Inter', system-ui, sans-serif" }}>
       <MarketingNav />
@@ -29,3 +44,4 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
     </div>
   )
 }
+

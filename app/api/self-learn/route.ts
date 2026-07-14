@@ -12,10 +12,33 @@ import { prisma } from '@/lib/prisma'
 import Groq from 'groq-sdk'
 
 function getGroq() {
-  return new Groq({ apiKey: process.env.GROQ_API_KEY! })
+  return new Groq({ apiKey: process.env.GROQ_API_KEY || 'mock_key' })
 }
 
 async function groqCall(prompt: string): Promise<string> {
+  const hasGroq = process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim() !== ''
+  if (!hasGroq) {
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) throw new Error('Neither GROQ_API_KEY nor GEMINI_API_KEY is configured')
+    const { GoogleGenAI } = require('@google/genai')
+    const ai = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    })
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.5-flash',
+      contents: prompt,
+      config: {
+        temperature: 0.7,
+      }
+    })
+    return response.text || ''
+  }
+
   const res = await getGroq().chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     max_tokens: 1200, temperature: 0.7,
@@ -44,8 +67,8 @@ export async function POST(req: NextRequest) {
   if (!roadmap) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const tasks = roadmap.tasks
-  const done = tasks.filter(t => t.done)
-  const doneDays = done.map(t => t.day).sort((a,b) => a-b)
+  const done = tasks.filter((t: any) => t.done)
+  const doneDays = done.map((t: any) => t.day).sort((a: any, b: any) => a - b)
   const completionRate = tasks.length > 0 ? Math.round(done.length / tasks.length * 100) : 0
 
   let streakMax = 0, cur = 0
@@ -54,18 +77,18 @@ export async function POST(req: NextRequest) {
   }
 
   const skillCount: Record<string,number> = {}
-  tasks.forEach(t => { if (t.techStack && Array.isArray(t.techStack)) (t.techStack as any[]).forEach((s:any) => { if (s.name) skillCount[s.name] = (skillCount[s.name]||0)+1 }) })
+  tasks.forEach((t: any) => { if (t.techStack && Array.isArray(t.techStack)) (t.techStack as any[]).forEach((s:any) => { if (s.name) skillCount[s.name] = (skillCount[s.name]||0)+1 }) })
   const topSkills = Object.entries(skillCount).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([n])=>n)
 
   if (action === 'suggest') {
-    const completed = done.map(t => t.title).slice(-5)
-    const skipped = tasks.filter(t => !t.done).slice(0,5).map(t => t.title)
+    const completed = done.map((t: any) => t.title).slice(-5)
+    const skipped = tasks.filter((t: any) => !t.done).slice(0,5).map((t: any) => t.title)
     try {
       const text = await groqCall(`Learning coach. Suggest best next task.
 Goal: ${roadmap.goal}
 Completed: ${completed.join(', ')}
 Struggling: ${skipped.join(', ')}
-Days left: ${tasks.filter(t=>!t.done).length}
+Days left: ${tasks.filter((t: any)=>!t.done).length}
 Return ONLY JSON: {"suggestedTopic":"topic","reason":"why","resources":[{"name":"name","url":"https://url.com"}],"estimatedHours":2}`)
       return NextResponse.json(parseJSON(text))
     } catch {
@@ -79,7 +102,7 @@ Return ONLY JSON: {"suggestedTopic":"topic","reason":"why","resources":[{"name":
 Roadmap: ${roadmap.title}
 Completion: ${completionRate}%
 Days done: ${done.length}, Max streak: ${streakMax}
-Skipped days: ${tasks.filter(t=>!t.done).length}
+Skipped days: ${tasks.filter((t: any)=>!t.done).length}
 Skills: ${topSkills.join(', ')}
 Return ONLY JSON: {"insights":["insight1","insight2"],"adjustments":[],"nextSteps":["step1","step2"],"motivationScore":75,"learningStyle":"Consistent Learner"}`)
     return NextResponse.json({ ...parseJSON(text), completionRate, streakMax, topSkills })

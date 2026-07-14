@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
       createdBy: 'AI',
       color,
       phases: {
-        create: roadmap.phases.map((phase) => ({
+        create: roadmap.phases.map((phase: any) => ({
           name: phase.name,
           order: phase.order,
           startWeek: phase.startWeek,
@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
         })),
       },
       projects: {
-        create: roadmap.phases.map((phase) => ({
+        create: roadmap.phases.map((phase: any) => ({
           name: phase.name,
           color,
           order: phase.order - 1,
@@ -147,16 +147,16 @@ export async function POST(req: NextRequest) {
   // its phase's matching Project, so the dashboard/today/reports/checklist — which
   // are all built around the Task model — actually have something to show.
   const taskData: Prisma.TaskCreateManyInput[] = []
-  roadmap.phases.forEach((phase) => {
-    const project = created.projects.find((p) => p.order === phase.order - 1)
+  roadmap.phases.forEach((phase: any) => {
+    const project = created.projects.find((p: any) => p.order === phase.order - 1)
     const techStack = (phase.keyTopicsChecklist || [])
       .slice(0, 4)
-      .map((topic) => ({ name: topic, type: 'other' }))
+      .map((topic: any) => ({ name: topic, type: 'other' }))
     const resources = (phase.resources || [])
-      .filter((r) => r.url)
-      .map((r) => ({ name: r.name, url: r.url as string }))
+      .filter((r: any) => r.url)
+      .map((r: any) => ({ name: r.name, url: r.url as string }))
 
-    ;(phase.weeklyMilestones || []).forEach((m) => {
+    ;(phase.weeklyMilestones || []).forEach((m: any) => {
       const day = Math.max(1, (m.week - 1) * 7 + 1)
       const description = [
         m.milestone,

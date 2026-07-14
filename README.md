@@ -350,3 +350,41 @@ npm run dev
 This project is licensed under the **MIT License** — see [`LICENSE`](./LICENSE).
 Every source file (`.ts`, `.tsx`, `.js`, `.css`) carries a matching header
 comment crediting **JSPN** as the author.
+
+---
+
+## 10. Development History & Fixes Report (Step-by-Step)
+
+Here is a comprehensive developer report tracking our modern visual refactoring, NextAuth multi-environment adjustments, and local server reliability.
+
+### 🛠️ 1. Mobile & Multi-Device Optimization (UI Fixes)
+- **Marketing Navigation (`MarketingNav.tsx`):**
+  - **Issue:** The navbar used fixed-width layout values and tight inline spacing, which caused layout overflow and ruined the experience on mobile viewports.
+  - **Solution:** Converted styling to **Tailwind CSS**. Built a fully fluid, responsive container using custom padding states (`px-4 sm:px-10`), and cleanly hid the secondary page navigation on mobile (`hidden md:flex`). Replaced rigid login buttons with responsive typography and flexible touch-targets (`text-xs sm:text-sm`).
+- **Stats Dashboard (`app/home/page.tsx`):**
+  - **Issue:** Desktop-centric grid with fixed inline separators rendered incorrectly on smaller screens.
+  - **Solution:** Replaced inline-flex structures with a fluid responsive grid (`grid-cols-2 md:grid-cols-4`). Styled modern borders using Tailwind’s divide utilities (`divide-x divide-y divide-white/[0.04] md:divide-y-0`) for clean borders that look spectacular on both mobile and wide screens.
+- **Roadmap Preview & Checklist (`app/home/page.tsx`):**
+  - **Issue:** The AI-generated roadmap simulation component was layout-constricted and caused horizontal page overflow.
+  - **Solution:** Shifted the key layout container from flat alignment to responsive flex structures (`flex flex-col md:flex-row`). Corrected padding systems (`p-4 sm:p-7`) and refined tech badges to wrap naturally on narrow viewports.
+
+### 🌐 2. Dynamic NextAuth Environment Handling
+- **The Problem:** NextAuth expects a static `NEXTAUTH_URL` configuration inside `.env` which fails during multi-environment deployments (AI Studio development containers, Render, Vercel). This mismatch triggers redirect loop blockages, "localhost refused to connect" states, and failed OAuth sessions on callback.
+- **The Solution:** Patched `/app/api/auth/[...nextauth]/route.ts`. Created a dynamic runtime wrapper to inspect proxy headers:
+  ```typescript
+  async function handler(req: NextRequest, ctx: any) {
+    const proto = req.headers.get('x-forwarded-proto') || 'https'
+    const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'localhost:3000'
+    process.env.NEXTAUTH_URL = `${proto}://${host}`
+    return authHandler(req, ctx)
+  }
+  ```
+  This fully decoupled the application from static environment configurations, ensuring absolute portable authentication across Localhost, AI Studio, Render, or Vercel out-of-the-box.
+
+### ⚡ 3. React Client Manifest & Bundler Recovery
+- **The Problem:** The compiler raised a fatal Next.js dev server error: `Could not find the module ... in the React Client Manifest. This is probably a bug in the React Server Components bundler.`
+- **The Solution:** 
+  1. Purged the stale compilation cache (`rm -rf .next`).
+  2. Established a stable linting environment by installing `eslint` and `eslint-config-next` and creating `.eslintrc.json`.
+  3. Recompiled the whole application and restarted the background Node.js process to rebuild clean client-server manifests.
+

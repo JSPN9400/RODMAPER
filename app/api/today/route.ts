@@ -19,11 +19,11 @@ export async function GET(req: NextRequest) {
     include: { projects: true, tasks: { orderBy: { day: 'asc' } } }
   })
 
-  const items = roadmaps.map(rm => {
-    const done = rm.tasks.filter(t => t.done).length
+  const items = roadmaps.map((rm: any) => {
+    const done = rm.tasks.filter((t: any) => t.done).length
     const total = rm.tasks.length
-    const nextTask = rm.tasks.find(t => !t.done)
-    const project = nextTask ? rm.projects.find(p => p.id === nextTask.projectId) : null
+    const nextTask = rm.tasks.find((t: any) => !t.done)
+    const project = nextTask ? rm.projects.find((p: any) => p.id === nextTask.projectId) : null
 
     return {
       roadmapId: rm.id,

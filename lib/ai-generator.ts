@@ -13,15 +13,51 @@ function getClient() {
   return new Groq({ apiKey: key })
 }
 
-async function groqCall(prompt: string, maxTokens = 8000): Promise<string> {
-  const client = getClient()
-  const res = await client.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
-    max_tokens: maxTokens,
-    temperature: 0.7,
-    messages: [{ role: 'user', content: prompt }]
+async function geminiCall(prompt: string): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) throw new Error('Neither GROQ_API_KEY nor GEMINI_API_KEY is configured')
+  
+  const { GoogleGenAI } = require('@google/genai')
+  const ai = new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      }
+    }
   })
-  return res.choices[0]?.message?.content || ''
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-3.5-flash',
+    contents: prompt,
+    config: {
+      temperature: 0.7,
+    }
+  })
+
+  return response.text || ''
+}
+
+async function groqCall(prompt: string, maxTokens = 8000): Promise<string> {
+  const hasGroq = process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim() !== ''
+  if (!hasGroq) {
+    console.log("[AI Studio] GROQ_API_KEY not configured, falling back to Gemini")
+    return geminiCall(prompt)
+  }
+
+  try {
+    const client = getClient()
+    const res = await client.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      max_tokens: maxTokens,
+      temperature: 0.7,
+      messages: [{ role: 'user', content: prompt }]
+    })
+    return res.choices[0]?.message?.content || ''
+  } catch (err) {
+    console.warn("[AI Studio] Groq API failed, falling back to Gemini:", err)
+    return geminiCall(prompt)
+  }
 }
 
 function parseJSON(text: string): any {

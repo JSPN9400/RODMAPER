@@ -11,7 +11,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Brain, CalendarDays, ChevronRight, GraduationCap, Loader2, PenLine, Sparkles } from 'lucide-react'
 
-type GoalType = 'short_term' | 'long_term'
+type GoalType = 'short_term' | 'long_term' | 'manual'
 type CurrentLevel = 'beginner' | 'intermediate' | 'advanced'
 type FocusType = 'practice' | 'theory' | 'mixed'
 type ExamType = 'competitive_exam' | 'degree' | 'certification' | 'career' | 'research'
@@ -28,6 +28,15 @@ const examTypeOptions: { value: ExamType; label: string }[] = [
   { value: 'certification', label: 'Certification' },
   { value: 'career', label: 'Career growth' },
   { value: 'research', label: 'Research / PhD' },
+]
+const colorOptions = [
+  { value: 'violet', label: 'Violet', hex: '#7c3aed' },
+  { value: 'blue', label: 'Blue', hex: '#2563eb' },
+  { value: 'green', label: 'Green', hex: '#16a34a' },
+  { value: 'amber', label: 'Amber', hex: '#d97706' },
+  { value: 'red', label: 'Red', hex: '#dc2626' },
+  { value: 'teal', label: 'Teal', hex: '#0d9488' },
+  { value: 'pink', label: 'Pink', hex: '#db2777' },
 ]
 
 export default function CreateRoadmapPage() {
@@ -56,6 +65,15 @@ export default function CreateRoadmapPage() {
     hoursPerDay: 3,
     background: '',
     examType: 'competitive_exam' as ExamType,
+  })
+
+  const [manual, setManual] = useState({
+    title: '',
+    goal: '',
+    description: '',
+    totalDays: 30,
+    roadmapType: 'SHORT_TERM' as 'SHORT_TERM' | 'LONG_TERM',
+    color: 'violet',
   })
 
   async function letAIDecide() {
@@ -134,11 +152,33 @@ export default function CreateRoadmapPage() {
     }
   }
 
+  async function saveManualRoadmap() {
+    if (!manual.title.trim() || !manual.goal.trim()) {
+      setError('Title and Goal are required for manual roadmaps')
+      return
+    }
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/roadmaps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(manual),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to create manual roadmap')
+      router.push(`/roadmap/${data.id}`)
+    } catch (e: any) {
+      setError(e.message || 'Failed to create manual roadmap')
+      setLoading(false)
+    }
+  }
+
   return (
     <div style={{ padding: '36px 40px', maxWidth: '860px' }}>
-      <h1 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '8px' }}>Universal AI Roadmap Builder</h1>
+      <h1 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '8px' }}>Universal Roadmap Builder</h1>
       <p style={{ fontSize: '14px', color: 'var(--text3)', marginBottom: '28px' }}>
-        Build study plans for coding, school subjects, competitive exams, degrees, careers, languages, research, and more.
+        Create custom learning pathways manually, or use the AI generator to instantly construct day-by-day prep checklists.
       </p>
 
       {error && (
@@ -150,17 +190,22 @@ export default function CreateRoadmapPage() {
       {step === 1 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '14px', padding: '22px' }}>
-            <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '14px' }}>What is your goal?</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '18px' }}>
+            <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '14px' }}>Choose your creation path</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '12px', marginBottom: '18px' }}>
               <button onClick={() => { setGoalType('short_term'); setStep(2) }} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px', textAlign: 'left', cursor: 'pointer' }}>
-                <CalendarDays size={18} style={{ marginBottom: '10px' }} />
-                <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '6px' }}>Short Term</div>
-                <div style={{ fontSize: '12px', color: 'var(--text3)' }}>Under 90 days. Best for learning a skill, quick revision, focused prep, or short projects.</div>
+                <CalendarDays size={18} style={{ marginBottom: '10px', color: '#7c3aed' }} />
+                <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '6px' }}>Short Term AI</div>
+                <div style={{ fontSize: '12px', color: 'var(--text3)' }}>Under 90 days. AI-crafted study plan for quick revisions, skill learning, or focused preps.</div>
               </button>
               <button onClick={() => { setGoalType('long_term'); setStep(2) }} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px', textAlign: 'left', cursor: 'pointer' }}>
-                <GraduationCap size={18} style={{ marginBottom: '10px' }} />
-                <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '6px' }}>Long Term</div>
-                <div style={{ fontSize: '12px', color: 'var(--text3)' }}>90+ days. Best for exams, degrees, research, major career transitions, and structured preparation.</div>
+                <GraduationCap size={18} style={{ marginBottom: '10px', color: '#3b82f6' }} />
+                <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '6px' }}>Long Term AI</div>
+                <div style={{ fontSize: '12px', color: 'var(--text3)' }}>90+ days. Structured AI syllabus for major exams, college degrees, or career pathways.</div>
+              </button>
+              <button onClick={() => { setGoalType('manual'); setStep(2) }} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px', textAlign: 'left', cursor: 'pointer' }}>
+                <PenLine size={18} style={{ marginBottom: '10px', color: '#10b981' }} />
+                <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '6px' }}>Manual Roadmap</div>
+                <div style={{ fontSize: '12px', color: 'var(--text3)' }}>Total control. Create your own stages, projects, and schedule from scratch.</div>
               </button>
             </div>
 
@@ -229,6 +274,72 @@ export default function CreateRoadmapPage() {
           <textarea className="input" style={{ minHeight: '100px' }} placeholder="Background: current preparation level, degree/class, completed topics, weak areas, etc." value={longTerm.background} onChange={(e) => setLongTerm({ ...longTerm, background: e.target.value })} />
           <button className="btn btn-primary btn-lg" onClick={generateRoadmap} disabled={loading || !longTerm.goal.trim()} style={{ justifyContent: 'center' }}>
             {loading ? <><Loader2 size={15} className="animate-spin" /> Generating...</> : <><Sparkles size={15} /> Generate Long-Term Roadmap</>}
+          </button>
+        </div>
+      )}
+
+      {step === 2 && goalType === 'manual' && (
+        <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '14px', padding: '22px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <button onClick={() => setStep(1)} style={{ background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--text3)' }}>← Back</button>
+          <div style={{ fontSize: '18px', fontWeight: '600' }}>Create Manual Roadmap</div>
+          
+          <div>
+            <label className="label">Roadmap Title</label>
+            <input className="input" placeholder="e.g., Complete Angular & NestJS Fullstack Prep" value={manual.title} onChange={(e) => setManual({ ...manual, title: e.target.value })} />
+          </div>
+
+          <div>
+            <label className="label">Primary Learning Goal</label>
+            <input className="input" placeholder="e.g., Build 3 web apps and learn dependency injection" value={manual.goal} onChange={(e) => setManual({ ...manual, goal: e.target.value })} />
+          </div>
+
+          <div>
+            <label className="label">Short Description / Subtitle</label>
+            <textarea className="input" style={{ minHeight: '80px' }} placeholder="Write a short summary of this learning track..." value={manual.description} onChange={(e) => setManual({ ...manual, description: e.target.value })} />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label className="label">Total Duration (Days)</label>
+              <input className="input" type="number" min={7} max={365} value={manual.totalDays} onChange={(e) => setManual({ ...manual, totalDays: Number(e.target.value) })} />
+            </div>
+            <div>
+              <label className="label">Roadmap Type</label>
+              <select className="input" value={manual.roadmapType} onChange={(e) => setManual({ ...manual, roadmapType: e.target.value as any })}>
+                <option value="SHORT_TERM">Short-Term (under 90 days)</option>
+                <option value="LONG_TERM">Long-Term (90+ days)</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="label">Theme Color</label>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+              {colorOptions.map((color) => (
+                <button
+                  key={color.value}
+                  type="button"
+                  onClick={() => setManual({ ...manual, color: color.value })}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    background: manual.color === color.value ? color.hex : 'var(--bg3)',
+                    color: manual.color === color.value ? '#fff' : 'var(--text3)',
+                    border: manual.color === color.value ? `1px solid ${color.hex}` : '1px solid var(--border)',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {color.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button className="btn btn-primary btn-lg" onClick={saveManualRoadmap} disabled={loading || !manual.title.trim() || !manual.goal.trim()} style={{ justifyContent: 'center', marginTop: '10px' }}>
+            {loading ? <><Loader2 size={15} className="animate-spin" /> Creating...</> : <><PenLine size={15} /> Create Roadmap</>}
           </button>
         </div>
       )}

@@ -1,0 +1,8 @@
+{
+  "name": "RoadMaper",
+  "description": "AI-powered learning roadmap platform to build personalized study plans, day-by-day tasks, and resources.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

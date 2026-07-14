@@ -20,12 +20,12 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions)
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#000000" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <SessionProvider session={session}>
           {session ? (
             <div style={{ display: 'flex', minHeight: '100vh' }}>

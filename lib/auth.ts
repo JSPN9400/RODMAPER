@@ -8,11 +8,12 @@
 import { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import GithubProvider from 'next-auth/providers/github'
+import CredentialsProvider from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@auth/prisma-adapter'
-import { prisma } from './prisma'
+import { prisma, hasDB } from './prisma'
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as any,
+  adapter: hasDB ? PrismaAdapter(prisma) as any : undefined,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
@@ -22,6 +23,19 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GITHUB_ID || '',
       clientSecret: process.env.GITHUB_SECRET || '',
     }),
+    CredentialsProvider({
+      id: 'credentials',
+      name: 'Developer Mode',
+      credentials: {},
+      async authorize() {
+        return {
+          id: 'dev-user-id',
+          name: 'Developer User',
+          email: 'developer@roadmaper.com',
+          image: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150'
+        }
+      }
+    })
   ],
   session: { strategy: 'jwt' },
   callbacks: {

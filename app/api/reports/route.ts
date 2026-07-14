@@ -23,11 +23,11 @@ export async function POST(req: NextRequest) {
   if (!roadmap) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const tasks = roadmap.tasks
-  const done = tasks.filter(t => t.done)
+  const done = tasks.filter((t: any) => t.done)
   const completionRate = tasks.length > 0 ? Math.round((done.length / tasks.length) * 100) : 0
 
   // Streak
-  const days = done.map(t => t.day).sort((a,b) => a-b)
+  const days = done.map((t: any) => t.day).sort((a: any, b: any) => a - b)
   let streakMax = 0, cur = 0
   for (let i = 0; i < days.length; i++) {
     if (i === 0 || days[i] - days[i-1] === 1) { cur++; streakMax = Math.max(streakMax, cur) } else cur = 1
@@ -35,15 +35,15 @@ export async function POST(req: NextRequest) {
 
   // Skills
   const skillCount: Record<string,number> = {}
-  tasks.forEach(t => { if (t.techStack && Array.isArray(t.techStack)) (t.techStack as any[]).forEach((s:any) => { if (s.name) skillCount[s.name] = (skillCount[s.name]||0)+1 }) })
+  tasks.forEach((t: any) => { if (t.techStack && Array.isArray(t.techStack)) (t.techStack as any[]).forEach((s:any) => { if (s.name) skillCount[s.name] = (skillCount[s.name]||0)+1 }) })
   const topSkills = Object.entries(skillCount).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([n])=>n)
 
-  const projectsData = roadmap.projects.map(p => {
-    const pT = tasks.filter(t => t.projectId === p.id)
-    return { name: p.name, color: p.color, completed: pT.filter(t=>t.done).length, total: pT.length }
+  const projectsData = roadmap.projects.map((p: any) => {
+    const pT = tasks.filter((t: any) => t.projectId === p.id)
+    return { name: p.name, color: p.color, completed: pT.filter((t: any)=>t.done).length, total: pT.length }
   })
 
-  const timelineData = tasks.map(t => ({ day: t.day, done: t.done, doneAt: t.doneAt?.toISOString() }))
+  const timelineData = tasks.map((t: any) => ({ day: t.day, done: t.done, doneAt: t.doneAt ? new Date(t.doneAt).toISOString() : undefined }))
 
   let summary = ''
   try { summary = await generateCompletionSummary(roadmap.title, completionRate, topSkills, done.length, tasks.length) }

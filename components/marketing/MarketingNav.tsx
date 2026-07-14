@@ -12,34 +12,20 @@ import Link from 'next/link'
 export default function MarketingNav() {
   return (
     <nav
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 50,
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-        background: 'rgba(9,9,11,0.85)',
-        backdropFilter: 'blur(12px)',
-        padding: '0 40px',
-        height: '60px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}
+      className="fixed top-0 left-0 right-0 z-50 h-[60px] flex items-center justify-between border-b border-white/[0.06] bg-zinc-950/85 backdrop-blur-md px-4 sm:px-10"
     >
-      <Link href="/home" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+      <Link href="/" className="flex items-center gap-2.5 no-underline">
         <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #7c3aed, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '800', color: '#fff' }}>R</div>
         <span style={{ fontSize: '15px', fontWeight: '700', color: '#fff', letterSpacing: '-0.3px' }}>RoadMaper</span>
       </Link>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-        <Link href="/home#features" style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>Features</Link>
-        <Link href="/pricing" style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>Pricing</Link>
-        <Link href="/about" style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>About</Link>
+      <div className="hidden md:flex items-center gap-8">
+        <Link href="/#features" className="text-sm text-white/60 hover:text-white transition no-underline">Features</Link>
+        <Link href="/pricing" className="text-sm text-white/60 hover:text-white transition no-underline">Pricing</Link>
+        <Link href="/about" className="text-sm text-white/60 hover:text-white transition no-underline">About</Link>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <Link href="/login" style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', padding: '7px 16px' }}>Sign in</Link>
-        <Link href="/login" style={{ fontSize: '14px', fontWeight: '500', color: '#fff', textDecoration: 'none', padding: '7px 18px', background: '#7c3aed', borderRadius: '8px' }}>Get started free</Link>
+      <div className="flex items-center gap-1 sm:gap-3">
+        <Link href="/login" className="text-xs sm:text-sm text-white/60 hover:text-white transition no-underline py-1.5 px-2 sm:px-4">Sign in</Link>
+        <Link href="/login" className="text-[11px] sm:text-sm font-medium text-white no-underline py-1.5 px-3 sm:px-4.5 bg-violet-600 hover:bg-violet-700 rounded-lg transition shrink-0 whitespace-nowrap">Get started free</Link>
       </div>
     </nav>
   )

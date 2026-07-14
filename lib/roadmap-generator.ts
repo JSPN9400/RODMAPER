@@ -95,23 +95,65 @@ function getClient() {
   return new Groq({ apiKey })
 }
 
-async function groqJSON<T>(systemPrompt: string, userPrompt: string, maxTokens = 8000): Promise<T> {
-  const client = getClient()
-  const res = await client.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
-    temperature: 0.4,
-    max_tokens: maxTokens,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ],
+async function geminiJSON<T>(systemPrompt: string, userPrompt: string): Promise<T> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) throw new Error('Neither GROQ_API_KEY nor GEMINI_API_KEY is configured')
+  
+  const { GoogleGenAI } = require('@google/genai')
+  const ai = new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      }
+    }
   })
 
-  const raw = res.choices[0]?.message?.content || ''
+  const response = await ai.models.generateContent({
+    model: 'gemini-3.5-flash',
+    contents: userPrompt,
+    config: {
+      systemInstruction: systemPrompt,
+      temperature: 0.4,
+      responseMimeType: 'application/json',
+    }
+  })
+
+  const raw = response.text || ''
   const clean = raw.replace(/```json|```/g, '').trim()
   const start = clean.indexOf('{') !== -1 ? clean.indexOf('{') : clean.indexOf('[')
   const end = Math.max(clean.lastIndexOf('}'), clean.lastIndexOf(']'))
   return JSON.parse(start >= 0 && end >= 0 ? clean.slice(start, end + 1) : clean) as T
+}
+
+async function groqJSON<T>(systemPrompt: string, userPrompt: string, maxTokens = 8000): Promise<T> {
+  const hasGroq = process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim() !== ''
+  if (!hasGroq) {
+    console.log("[AI Studio] GROQ_API_KEY not configured, falling back to Gemini")
+    return geminiJSON<T>(systemPrompt, userPrompt)
+  }
+
+  try {
+    const client = getClient()
+    const res = await client.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      temperature: 0.4,
+      max_tokens: maxTokens,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+    })
+
+    const raw = res.choices[0]?.message?.content || ''
+    const clean = raw.replace(/```json|```/g, '').trim()
+    const start = clean.indexOf('{') !== -1 ? clean.indexOf('{') : clean.indexOf('[')
+    const end = Math.max(clean.lastIndexOf('}'), clean.lastIndexOf(']'))
+    return JSON.parse(start >= 0 && end >= 0 ? clean.slice(start, end + 1) : clean) as T
+  } catch (err) {
+    console.warn("[AI Studio] Groq API failed, falling back to Gemini:", err)
+    return geminiJSON<T>(systemPrompt, userPrompt)
+  }
 }
 
 export function detectGoalType(goal: string): GoalType {

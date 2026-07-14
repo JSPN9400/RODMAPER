@@ -101,6 +101,35 @@ export default function LoginPage() {
             )}
             Continue with GitHub
           </button>
+
+          {/* Demo Mode */}
+          <div style={{ display: 'flex', alignItems: 'center', margin: '14px 0' }}>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+            <span style={{ padding: '0 10px', fontSize: '11px', color: 'rgba(255,255,255,0.25)' }}>or</span>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+          </div>
+
+          <button
+            onClick={() => { setLoading('credentials'); signIn('credentials', { callbackUrl: '/dashboard' }) }}
+            disabled={!!loading}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+              height: '46px', borderRadius: '12px',
+              background: 'linear-gradient(135deg, #7c3aed, #9333ea)', color: '#fff',
+              border: 'none',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontSize: '14px', fontWeight: '600',
+              opacity: loading && loading !== 'credentials' ? 0.4 : 1,
+              fontFamily: 'inherit', transition: 'all 0.15s',
+              boxShadow: '0 4px 15px rgba(124,58,237,0.3)'
+            }}>
+            {loading === 'credentials' ? (
+              <div className="spinner" style={{ width: '16px', height: '16px' }} />
+            ) : (
+              <span>✨</span>
+            )}
+            Developer Demo Mode
+          </button>
         </div>
 
         <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', textAlign: 'center', marginTop: '16px' }}>

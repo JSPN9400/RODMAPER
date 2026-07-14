@@ -30,7 +30,7 @@ export async function sendPushToUser(userId: string, title: string, body: string
   const payload = JSON.stringify({ title, body, icon: '/icon-192.png', url, timestamp: Date.now() })
 
   const results = await Promise.allSettled(
-    subs.map(sub =>
+    subs.map((sub: any) =>
       webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
         payload

@@ -23,15 +23,16 @@ export default function ReportsContent() {
   const [loading, setLoading] = useState(false)
   const [selected, setSelected] = useState(sp.get('roadmapId') || '')
 
+  // Intentional run-once-on-mount fetch: `selected` is only read below to
+  // pick an initial default when nothing is selected yet, not to react to
+  // changes in it — it must not be a dependency here.
   useEffect(() => {
     fetch('/api/roadmaps').then(r => r.json()).then(d => {
       const arr = Array.isArray(d) ? d : []
       setRoadmaps(arr)
       if (!selected && arr.length > 0) setSelected(arr[0].id)
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
-    // run-once-on-mount: `selected` is only read here to pick an initial
-    // default when nothing is selected yet, not to react to changes in it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {

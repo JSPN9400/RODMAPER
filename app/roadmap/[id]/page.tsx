@@ -6,7 +6,7 @@
  */
 
 'use client'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowLeft, BarChart2, Trash2, Edit2, Plus, X, Save } from 'lucide-react'
@@ -58,16 +58,16 @@ export default function RoadmapPage() {
   })
   const [newRes, setNewRes] = useState({ name: '', url: '' })
 
-  const fetchRoadmap = () => {
+  const fetchRoadmap = useCallback(() => {
     fetch(`/api/roadmaps/${id}`).then(r => r.json()).then(d => { 
       setRm(d)
       setLoading(false) 
     })
-  }
+  }, [id])
 
   useEffect(() => {
     fetchRoadmap()
-  }, [id])
+  }, [fetchRoadmap])
 
   async function toggleTask(task: any) {
     const newDone = !task.done

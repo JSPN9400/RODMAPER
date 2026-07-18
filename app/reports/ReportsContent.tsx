@@ -29,6 +29,9 @@ export default function ReportsContent() {
       setRoadmaps(arr)
       if (!selected && arr.length > 0) setSelected(arr[0].id)
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+    // run-once-on-mount: `selected` is only read here to pick an initial
+    // default when nothing is selected yet, not to react to changes in it.
   }, [])
 
   useEffect(() => {

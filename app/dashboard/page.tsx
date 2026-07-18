@@ -72,7 +72,7 @@ export default function DashboardPage() {
       <div style={{ padding: '24px 16px 32px', maxWidth: '640px', margin: '0 auto' }}>
         <div style={{ fontSize: '24px', fontWeight: '800', marginBottom: '6px' }} className="font-display">Welcome to RoadMaper</div>
         <p style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '28px' }}>
-          You don't have a roadmap yet — here's how it works.
+          You don&apos;t have a roadmap yet — here&apos;s how it works.
         </p>
 
         <div className="route-line" style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '26px', paddingLeft: '2px' }}>

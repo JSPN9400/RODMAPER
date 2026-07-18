@@ -95,7 +95,7 @@ export default function SettingsPage() {
     return () => {
       stopSynth()
     }
-  }, [])
+  }, [setTheme])
 
   async function toggleBrowserPush() {
     if (pushStatus === 'on') {
@@ -653,7 +653,7 @@ export default function SettingsPage() {
                   <span style={{ fontSize: '12px', color: 'var(--red)' }}>Notifications are blocked for this site in your browser settings — allow them there, then reload this page.</span>
                 )}
                 {pushStatus === 'unsupported' && (
-                  <span style={{ fontSize: '12px', color: 'var(--text3)' }}>Push notifications aren't supported in this browser.</span>
+                  <span style={{ fontSize: '12px', color: 'var(--text3)' }}>Push notifications aren&apos;t supported in this browser.</span>
                 )}
               </div>
             </div>

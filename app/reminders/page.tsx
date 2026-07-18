@@ -115,7 +115,7 @@ export default function RemindersPage() {
                   <span key={d} style={{ fontSize:'10px', padding:'1px 5px', borderRadius:'3px', background: r.days?.includes(d) ? 'var(--accent-bg)' : 'transparent', color: r.days?.includes(d) ? 'var(--accent3)' : 'var(--text4)' }}>{DAYS[d]}</span>
                 ))}
               </div>
-              {r.message && <p style={{ fontSize:'11px', color:'var(--text4)', margin:'4px 0 0' }}>"{r.message}"</p>}
+              {r.message && <p style={{ fontSize:'11px', color:'var(--text4)', margin:'4px 0 0' }}>&quot;{r.message}&quot;</p>}
             </div>
             <div style={{ display:'flex', gap:'6px' }}>
               <button onClick={() => toggleReminder(r)} style={{ width:'32px', height:'32px', borderRadius:'8px', border:'none', cursor:'pointer', background: r.enabled ? 'var(--green-bg)' : 'var(--bg4)', color: r.enabled ? 'var(--green)' : 'var(--text4)', display:'flex', alignItems:'center', justifyContent:'center' }}>

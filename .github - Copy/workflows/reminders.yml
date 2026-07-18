@@ -1,0 +1,25 @@
+name: Reminder pushes
+
+# Runs every 5 minutes and calls /api/cron/reminders on the live deployment.
+# This is the recommended way to run reminders — Vercel's own Cron Jobs
+# feature only guarantees once-per-day execution on the free "Hobby" plan,
+# which is too coarse for reminders set at a specific time of day.
+#
+# Setup required (once):
+#   1. Repo → Settings → Secrets and variables → Actions → New repository secret
+#      - APP_URL      = https://your-deployment.vercel.app
+#      - CRON_SECRET  = same value as the CRON_SECRET env var set in Vercel
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  trigger-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call reminders cron endpoint
+        run: |
+          curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/reminders" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --max-time 30

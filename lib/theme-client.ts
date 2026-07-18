@@ -6,7 +6,7 @@
  */
 
 'use client'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 export type Theme = 'dark' | 'light'
 
@@ -37,7 +37,7 @@ export function useTheme(): [Theme, (t: Theme) => void] {
     setThemeState(current)
   }, [])
 
-  function setTheme(t: Theme) {
+  const setTheme = useCallback((t: Theme) => {
     applyTheme(t)
     setThemeState(t)
     // Best-effort sync to the server so the preference follows the user to
@@ -48,7 +48,7 @@ export function useTheme(): [Theme, (t: Theme) => void] {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ theme: t }),
     }).catch(() => {})
-  }
+  }, [])
 
   return [theme, setTheme]
 }

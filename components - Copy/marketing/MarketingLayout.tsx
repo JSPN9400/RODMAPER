@@ -1,0 +1,47 @@
+/**
+ * RoadMaper — AI-powered learning roadmap platform.
+ * Copyright (c) 2026 JSPN. All rights reserved.
+ * @author JSPN
+ * @license MIT — see LICENSE file in the project root.
+ */
+
+'use client'
+
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import MarketingNav from './MarketingNav'
+
+export default function MarketingLayout({ children }: { children: React.ReactNode }) {
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  if (!isMounted) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#14120F', color: '#F4EEE2' }} />
+    )
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#14120F', color: '#F4EEE2', fontFamily: "'Inter', system-ui, sans-serif" }}>
+      <MarketingNav />
+      <main style={{ paddingTop: '60px' }}>{children}</main>
+      <footer style={{ borderTop: '1px solid rgba(244,238,226,0.06)', padding: '40px', marginTop: '80px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: 'linear-gradient(135deg, #C88A3D, #E8C084)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '800', color: '#fff' }}>R</div>
+            <span style={{ fontSize: '13px', color: 'rgba(244,238,226,0.4)' }}>RoadMaper © 2026 · All rights reserved</span>
+          </div>
+          <div style={{ display: 'flex', gap: '24px' }}>
+            {['Privacy', 'Terms', 'Contact'].map((label) => (
+              <Link key={label} href="#" style={{ fontSize: '13px', color: 'rgba(244,238,226,0.4)', textDecoration: 'none' }}>{label}</Link>
+            ))}
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
+}
+

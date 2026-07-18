@@ -9,14 +9,14 @@ import { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import GithubProvider from 'next-auth/providers/github'
 import { PrismaAdapter } from '@auth/prisma-adapter'
-import { prisma, hasDB } from './prisma'
+import { prisma } from './prisma'
 
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 60 // 60 days — user stays signed in
 // in this browser until this passes or they explicitly sign out; no repeat
 // login prompts on return visits within that window.
 
 export const authOptions: NextAuthOptions = {
-  adapter: hasDB ? PrismaAdapter(prisma) as any : undefined,
+  adapter: PrismaAdapter(prisma) as any,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',

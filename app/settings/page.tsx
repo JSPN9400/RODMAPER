@@ -8,7 +8,9 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { Save, Key, Globe, Check, ExternalLink, Bell, Clock, Target, ShieldCheck, Download, Trash2, Volume2, Play, Square, Activity, Moon } from 'lucide-react'
+import { Save, Key, Globe, Check, ExternalLink, Bell, Clock, Target, ShieldCheck, Download, Trash2, Volume2, Play, Square, Activity, Moon, Sun, BellOff } from 'lucide-react'
+import { pushSupported, subscribeToPush, unsubscribeFromPush } from '@/lib/push-client'
+import { useTheme } from '@/lib/theme-client'
 
 const TECH_STACKS_OPTIONS = ['React', 'Next.js', 'TypeScript', 'Node.js', 'Python', 'Django', 'PostgreSQL', 'Docker', 'Kubernetes', 'AWS', 'GCP', 'Algorithms']
 
@@ -21,6 +23,8 @@ export default function SettingsPage() {
   const [tz, setTz] = useState('Asia/Kolkata')
   const [notifications, setNotifications] = useState(true)
   const [reminderTime, setReminderTime] = useState('09:00')
+  const [theme, setTheme] = useTheme()
+  const [pushStatus, setPushStatus] = useState<'unknown' | 'checking' | 'on' | 'off' | 'unsupported' | 'denied'>('unknown')
   const [studyTarget, setStudyTarget] = useState('3') 
   const [academicGoal, setAcademicGoal] = useState('Career Prep')
 
@@ -46,6 +50,12 @@ export default function SettingsPage() {
       .then((d) => {
         if (d?.timezone) setTz(d.timezone)
         if (d?.notificationsEnabled !== undefined) setNotifications(d.notificationsEnabled)
+        // Only apply the server's saved theme if this browser has never set
+        // a local preference — otherwise a stale server value could
+        // override a choice the user just made on this device.
+        if (d?.theme && typeof window !== 'undefined' && !localStorage.getItem('rm-theme')) {
+          setTheme(d.theme === 'light' ? 'light' : 'dark')
+        }
         if (d?.defaultReminderTime) setReminderTime(d.defaultReminderTime)
       })
       .finally(() => setLoading(false))
@@ -67,10 +77,44 @@ export default function SettingsPage() {
       }
     }
 
+    // Check current browser push subscription state (separate from the
+    // notificationsEnabled DB flag — this is whether *this device* has
+    // actually granted permission and subscribed).
+    if (!pushSupported()) {
+      setPushStatus('unsupported')
+    } else if (Notification.permission === 'denied') {
+      setPushStatus('denied')
+    } else {
+      setPushStatus('checking')
+      navigator.serviceWorker.getRegistration().then(async (reg) => {
+        const sub = await reg?.pushManager.getSubscription()
+        setPushStatus(sub ? 'on' : 'off')
+      }).catch(() => setPushStatus('off'))
+    }
+
     return () => {
       stopSynth()
     }
   }, [])
+
+  async function toggleBrowserPush() {
+    if (pushStatus === 'on') {
+      await unsubscribeFromPush()
+      setPushStatus('off')
+      return
+    }
+    setPushStatus('checking')
+    const result = await subscribeToPush()
+    if (result.ok) {
+      setPushStatus('on')
+    } else if (result.reason === 'permission-denied') {
+      setPushStatus('denied')
+    } else if (result.reason === 'not-supported') {
+      setPushStatus('unsupported')
+    } else {
+      setPushStatus('off')
+    }
+  }
 
   // Web Audio Synthesizer logic for student focus
   const startSynth = () => {
@@ -314,7 +358,47 @@ export default function SettingsPage() {
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        
+
+        {/* Appearance */}
+        <div className="card-feed" style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+            {theme === 'light' ? <Sun size={15} style={{ color: 'var(--accent3)' }} /> : <Moon size={15} style={{ color: 'var(--accent3)' }} />}
+            <span style={{ fontSize: '13px', fontWeight: '700' }}>Appearance</span>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={() => setTheme('dark')}
+              style={{
+                flex: 1, padding: '14px', borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
+                background: theme === 'dark' ? 'var(--accent-bg)' : 'var(--bg3)',
+                border: `1px solid ${theme === 'dark' ? 'var(--accent-border)' : 'var(--border2)'}`,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <Moon size={14} />
+                <span style={{ fontSize: '13px', fontWeight: '600' }}>Dark</span>
+                {theme === 'dark' && <Check size={12} style={{ color: 'var(--accent3)', marginLeft: 'auto' }} />}
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text3)' }}>Ink & brass — easier at night</div>
+            </button>
+            <button
+              onClick={() => setTheme('light')}
+              style={{
+                flex: 1, padding: '14px', borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
+                background: theme === 'light' ? 'var(--accent-bg)' : 'var(--bg3)',
+                border: `1px solid ${theme === 'light' ? 'var(--accent-border)' : 'var(--border2)'}`,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <Sun size={14} />
+                <span style={{ fontSize: '13px', fontWeight: '600' }}>Light</span>
+                {theme === 'light' && <Check size={12} style={{ color: 'var(--accent3)', marginLeft: 'auto' }} />}
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text3)' }}>Parchment & ink — daylight reading</div>
+            </button>
+          </div>
+        </div>
+
         {/* Student Learning Profile */}
         <div className="card-feed" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
@@ -373,13 +457,13 @@ export default function SettingsPage() {
         </div>
 
         {/* Ambient focus music player */}
-        <div className="card-feed" style={{ padding: '20px', border: synthPlaying ? '1px solid rgba(124, 58, 237, 0.4)' : '1px solid rgba(255,255,255,0.06)', transition: 'border 0.3s' }}>
+        <div className="card-feed" style={{ padding: '20px', border: synthPlaying ? '1px solid rgba(200,138,61,0.4)' : '1px solid rgba(244,238,226,0.06)', transition: 'border 0.3s' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Moon size={15} style={{ color: synthPlaying ? '#a78bfa' : 'var(--text4)' }} />
+              <Moon size={15} style={{ color: synthPlaying ? '#E8C084' : 'var(--text4)' }} />
               <span style={{ fontSize: '13px', fontWeight: '700' }}>Ambient Focus Sound Synth</span>
             </div>
-            {synthPlaying && <span style={{ fontSize: '10px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}><span className="w-2 h-2 rounded-full bg-green-500 animate-ping" /> SYNTHESIZER ACTIVE</span>}
+            {synthPlaying && <span style={{ fontSize: '10px', color: '#4C8C89', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}><span className="w-2 h-2 rounded-full bg-green-500 animate-ping" /> SYNTHESIZER ACTIVE</span>}
           </div>
 
           <p style={{ fontSize: '12px', color: 'var(--text3)', marginBottom: '14px', lineHeight: '1.5' }}>
@@ -396,8 +480,8 @@ export default function SettingsPage() {
                 key={sound.id}
                 onClick={() => handleSynthTypeChange(sound.id)}
                 style={{
-                  background: synthType === sound.id ? 'rgba(124,58,237,0.1)' : 'var(--bg3)',
-                  border: `1px solid ${synthType === sound.id ? '#7c3aed' : 'transparent'}`,
+                  background: synthType === sound.id ? 'rgba(200,138,61,0.1)' : 'var(--bg3)',
+                  border: `1px solid ${synthType === sound.id ? '#C88A3D' : 'transparent'}`,
                   borderRadius: '8px',
                   padding: '10px 8px',
                   cursor: 'pointer',
@@ -418,7 +502,7 @@ export default function SettingsPage() {
                 alignItems: 'center',
                 gap: '8px',
                 padding: '8px 16px',
-                background: synthPlaying ? '#dc2626' : '#7c3aed',
+                background: synthPlaying ? '#BB6453' : '#C88A3D',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '8px',
@@ -439,7 +523,7 @@ export default function SettingsPage() {
                 step="0.05"
                 value={volume}
                 onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                style={{ flex: 1, accentColor: '#7c3aed', cursor: 'pointer' }}
+                style={{ flex: 1, accentColor: '#C88A3D', cursor: 'pointer' }}
               />
               <span style={{ fontSize: '11px', color: 'var(--text3)', width: '25px', textAlign: 'right' }}>{Math.round(volume * 100)}%</span>
             </div>
@@ -467,8 +551,8 @@ export default function SettingsPage() {
                     borderRadius: '999px',
                     fontSize: '12px',
                     cursor: 'pointer',
-                    background: isSelected ? 'rgba(124,58,237,0.1)' : 'var(--bg3)',
-                    border: `1px solid ${isSelected ? '#7c3aed' : 'var(--border)'}`,
+                    background: isSelected ? 'rgba(200,138,61,0.1)' : 'var(--bg3)',
+                    border: `1px solid ${isSelected ? '#C88A3D' : 'var(--border)'}`,
                     color: isSelected ? '#fff' : 'var(--text3)',
                     transition: 'all 0.1s'
                   }}
@@ -501,8 +585,8 @@ export default function SettingsPage() {
                     borderRadius: '6px',
                     fontSize: '11px',
                     cursor: 'pointer',
-                    background: isSelected ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg3)',
-                    border: `1px solid ${isSelected ? '#10b981' : 'var(--border)'}`,
+                    background: isSelected ? 'rgba(76,140,137,0.1)' : 'var(--bg3)',
+                    border: `1px solid ${isSelected ? '#4C8C89' : 'var(--border)'}`,
                     color: isSelected ? '#fff' : 'var(--text3)',
                     transition: 'all 0.1s'
                   }}
@@ -527,7 +611,7 @@ export default function SettingsPage() {
               id="notifications"
               checked={notifications} 
               onChange={e => setNotifications(e.target.checked)} 
-              style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#7c3aed' }}
+              style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#C88A3D' }}
             />
             <label htmlFor="notifications" style={{ fontSize: '13px', color: '#fff', cursor: 'pointer' }}>
               Enable daily email and push notifications
@@ -547,6 +631,31 @@ export default function SettingsPage() {
                 onChange={e => setReminderTime(e.target.value)} 
                 style={{ maxWidth: '140px' }}
               />
+
+              <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text3)', marginBottom: '8px' }}>
+                  This toggle just saves your preferred time. To actually receive a push on <em>this device</em>, you also need to allow browser notifications:
+                </div>
+                {pushStatus === 'on' && (
+                  <button onClick={toggleBrowserPush} className="btn btn-ghost btn-sm">
+                    <BellOff size={12} /> Turn off push on this device
+                  </button>
+                )}
+                {pushStatus === 'off' && (
+                  <button onClick={toggleBrowserPush} className="btn btn-primary btn-sm">
+                    <Bell size={12} /> Enable push on this device
+                  </button>
+                )}
+                {pushStatus === 'checking' && (
+                  <span style={{ fontSize: '12px', color: 'var(--text3)' }}>Checking...</span>
+                )}
+                {pushStatus === 'denied' && (
+                  <span style={{ fontSize: '12px', color: 'var(--red)' }}>Notifications are blocked for this site in your browser settings — allow them there, then reload this page.</span>
+                )}
+                {pushStatus === 'unsupported' && (
+                  <span style={{ fontSize: '12px', color: 'var(--text3)' }}>Push notifications aren't supported in this browser.</span>
+                )}
+              </div>
             </div>
           )}
         </div>

@@ -10,7 +10,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { CheckCircle2, ChevronLeft, ChevronRight, Clock3, ExternalLink, SkipForward } from 'lucide-react'
-import { PageError, PageSpinner } from '@/components/ui/PageState'
+import { PageError, TodaySkeleton, EmptyState } from '@/components/ui/PageState'
+import { Confetti } from '@/components/ui/Confetti'
 
 export default function TodayPage() {
   const [items, setItems] = useState<any[]>([])
@@ -52,7 +53,7 @@ export default function TodayPage() {
     setIndex((prev) => (prev + 1) % items.length)
   }
 
-  if (loading) return <PageSpinner label="Loading today's stack..." />
+  if (loading) return <TodaySkeleton />
   if (error) return <PageError title="Today's stack could not load" message={error} />
 
   return (
@@ -72,7 +73,8 @@ export default function TodayPage() {
       </div>
 
       {current ? (
-        <div className={`card-feed ${celebrate ? 'animate-bounce-in' : ''}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '520px' }}>
+        <div className={`card-feed ${celebrate ? 'animate-bounce-in' : ''}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '520px', position: 'relative' }}>
+          <Confetti fire={celebrate} count={20} />
           <div style={{ padding: '22px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
               <div>
@@ -130,11 +132,13 @@ export default function TodayPage() {
           </div>
         </div>
       ) : (
-        <div className="card-feed" style={{ padding: '28px', textAlign: 'center' }}>
-          <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '6px' }}>All caught up</div>
-          <div style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '16px' }}>No pending cards for today. Come back tomorrow or open your dashboard.</div>
-          <Link href="/dashboard" className="btn btn-primary">Go to Dashboard</Link>
-        </div>
+        <EmptyState
+          icon={CheckCircle2}
+          tone="accent"
+          title="All caught up"
+          desc="No pending cards for today. Come back tomorrow, or open your dashboard to start something new."
+          action={<Link href="/dashboard" className="btn btn-primary">Go to Dashboard</Link>}
+        />
       )}
     </div>
   )

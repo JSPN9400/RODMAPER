@@ -8,9 +8,12 @@
 import { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import GithubProvider from 'next-auth/providers/github'
-import CredentialsProvider from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma, hasDB } from './prisma'
+
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 60 // 60 days — user stays signed in
+// in this browser until this passes or they explicitly sign out; no repeat
+// login prompts on return visits within that window.
 
 export const authOptions: NextAuthOptions = {
   adapter: hasDB ? PrismaAdapter(prisma) as any : undefined,
@@ -23,21 +26,9 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GITHUB_ID || '',
       clientSecret: process.env.GITHUB_SECRET || '',
     }),
-    CredentialsProvider({
-      id: 'credentials',
-      name: 'Developer Mode',
-      credentials: {},
-      async authorize() {
-        return {
-          id: 'dev-user-id',
-          name: 'Developer User',
-          email: 'developer@roadmaper.com',
-          image: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150'
-        }
-      }
-    })
   ],
-  session: { strategy: 'jwt' },
+  session: { strategy: 'jwt', maxAge: SESSION_MAX_AGE_SECONDS },
+  jwt: { maxAge: SESSION_MAX_AGE_SECONDS },
   callbacks: {
     async session({ session, token }) {
       if (token.sub && session.user) (session.user as any).id = token.sub

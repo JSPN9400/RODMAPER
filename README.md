@@ -129,7 +129,8 @@ License: **MIT** (see [`LICENSE`](./LICENSE))
 | `goal-analytics.ts` | Writes/updates the `GoalAnalytics` table — tracks how popular a given goal text is and (via `updateSuccessRate`) how often people who start it actually finish it. Currently write-only; nothing reads this table back into the UI yet. |
 | `ai-generator.ts` | An older/parallel AI generator (`generateRoadmapWithAI`, `parseUserIntent`, `generateCompletionSummary`, `generateResumeBullets`). `parseUserIntent` still powers the "let AI decide" box on the Create page (`/api/nlu`) and `generateCompletionSummary` still powers report summaries. The roadmap-creation function `generateRoadmapWithAI` itself is now dead code — the Create page calls `/api/roadmaps/generate` (→ `roadmap-generator.ts`), not the legacy `mode: 'ai'` path in `app/api/roadmaps/route.ts` that calls this function. Safe to delete once you've confirmed nothing else references it. |
 | `report-generator.ts` | **Removed** — see §5 for why. |
-| `notifications.ts` | Web Push helpers. `sendPushToUser` sends a push payload to every subscription a user has (and prunes subscriptions that fail, e.g. because the user uninstalled/blocked notifications). `scheduleReminders` is meant to be invoked on a schedule (every minute, via an external cron or a Vercel Cron Job) — it finds all `Reminder`s whose `time`/`days` match "now" and pushes a notification for each one's next incomplete task. **Note:** nothing in this repo currently calls `scheduleReminders()` on a timer — you need to wire up a Vercel Cron Job (or similar) hitting a small API route that calls it. |
+| `notifications.ts` | Web Push helpers. `sendPushToUser` sends a push payload to every subscription a user has (and prunes subscriptions that fail, e.g. because the user uninstalled/blocked notifications). `scheduleReminders` computes each reminder's due time in *that reminder's own user's timezone* (via `Settings.timezone`, `Intl.DateTimeFormat`) and sends a push for every `Reminder` due within the last few minutes — see `app/api/cron/reminders/route.ts` for how it's actually triggered on a schedule. |
+| `push-client.ts` | Browser-side only. `subscribeToPush()`/`unsubscribeFromPush()` register `public/sw.js` and manage the actual Push API subscription (permission prompt, `PushManager.subscribe`, POST/DELETE to `/api/push`). Used by the "Enable push on this device" button on `/settings` — without this, `notifications.ts` has no subscriptions to send to. |
 
 ### `types/`
 
@@ -204,6 +205,7 @@ License: **MIT** (see [`LICENSE`](./LICENSE))
 | `app/api/nlu/route.ts` | POST | Parses a free-text goal ("I want to learn Python in 30 days") into structured fields (goal, background, days, hoursPerDay) via Groq — powers the "AI understands" box on the Create page. |
 | `app/api/self-learn/route.ts` | POST | Two modes: `action: 'suggest'` (recommend the next topic) and full analysis (insights, motivation score, learning style) — powers `/insights`. |
 | `app/api/settings/route.ts` | GET, PATCH | Get-or-create and update the signed-in user's `Settings` row — powers `/settings`. |
+| `app/api/cron/reminders/route.ts` | GET | Calls `scheduleReminders()`. Requires an `Authorization: Bearer <CRON_SECRET>` header. Meant to be hit on a schedule — see §11. |
 
 ---
 
@@ -251,9 +253,12 @@ License: **MIT** (see [`LICENSE`](./LICENSE))
   patched, since nothing referenced it. If you want report-generation logic
   as a standalone, reusable function again (e.g. to call from a cron job),
   recreate it and give it real types instead of re-adding this file as-is.
-- **`scheduleReminders()` needs a scheduler** — nothing currently calls it on
-  a timer. Wire it up with a Vercel Cron Job (or any external scheduler)
-  hitting a small authenticated API route once a minute.
+- **Fixed: reminders now actually fire.** `scheduleReminders()` previously
+  had nothing calling it, and even if invoked would have compared reminder
+  times against the server's UTC clock instead of each user's own timezone
+  (so a "9:00 AM" reminder for a user in `Asia/Kolkata` would have fired at
+  2:30 PM local time), plus it required an exact-minute string match that a
+  periodic cron would rarely land on. All three are fixed — see §2 and §11.
 - **Fixed (full-codebase audit):** a pass through every file turned up and
   fixed several functional bugs that had shipped silently:
   - Long-term roadmap generation created `Phase`/`Project` rows but **zero
@@ -302,10 +307,12 @@ Copy `.env.example` to `.env.local` for local dev (never commit the real file
 | `DATABASE_URL` | Yes | PostgreSQL connection string (e.g. from Neon). |
 | `NEXTAUTH_URL` | Yes | The app's public base URL (must match your deployment exactly). |
 | `NEXTAUTH_SECRET` | Yes | Random secret for signing session JWTs — generate with `openssl rand -base64 32`. |
-| `GROQ_API_KEY` | Yes | Free key from [console.groq.com](https://console.groq.com/) — powers all AI generation. |
+| `GROQ_API_KEY` | Yes | Free key from [console.groq.com](https://console.groq.com/) — primary AI provider for roadmap generation. |
+| `GEMINI_API_KEY` | Recommended | Free key from [Google AI Studio](https://aistudio.google.com/) — automatic fallback provider used when `GROQ_API_KEY` is missing or a Groq call fails (see `lib/roadmap-generator.ts`, `lib/ai-generator.ts`). |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Yes (for Google login) | OAuth app credentials from Google Cloud Console. Authorized redirect URI: `<NEXTAUTH_URL>/api/auth/callback/google`. |
 | `GITHUB_ID` / `GITHUB_SECRET` | Yes (for GitHub login) | OAuth app credentials from GitHub Developer Settings. Authorized callback URL: `<NEXTAUTH_URL>/api/auth/callback/github`. |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_EMAIL` | Optional | Only needed for browser push notifications (`lib/notifications.ts`). Generate with `npx web-push generate-vapid-keys`. |
+| `CRON_SECRET` | Optional | Only needed for reminder push notifications. Authorizes calls to `/api/cron/reminders` — see §11. Generate with `openssl rand -base64 32`. |
 
 ---
 
@@ -388,3 +395,170 @@ Here is a comprehensive developer report tracking our modern visual refactoring,
   2. Established a stable linting environment by installing `eslint` and `eslint-config-next` and creating `.eslintrc.json`.
   3. Recompiled the whole application and restarted the background Node.js process to rebuild clean client-server manifests.
 
+
+---
+
+## 11. Turning on reminder push notifications
+
+Reminders (`/reminders`) only actually *send* anything once these are in
+place. None of this is required for the rest of the app to work.
+
+**Step 0 — each user opts in on their device:** on `/settings`, under
+"Study Reminders", the "Enable push on this device" button
+(`lib/push-client.ts`) prompts for browser notification permission and
+creates a Push API subscription, saved via `POST /api/push`. This has to
+happen once per browser/device a user wants notified on — there's no way
+around the browser's permission prompt.
+
+**Step 1 — generate VAPID keys** (lets the server push to browsers):
+```bash
+npx web-push generate-vapid-keys
+```
+Set the output as `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` in
+Vercel's environment variables (and `.env.local` for local dev).
+
+**Step 2 — protect and schedule `/api/cron/reminders`:**
+1. Generate a secret: `openssl rand -base64 32`.
+2. Add it as `CRON_SECRET` in Vercel's environment variables.
+3. Pick **one** scheduler:
+   - **Recommended — GitHub Actions** (`.github/workflows/reminders.yml`,
+     runs every 5 minutes, free, works on any Vercel plan): in your GitHub
+     repo, go to Settings → Secrets and variables → Actions, and add two
+     repository secrets: `APP_URL` (your live deployment URL, no trailing
+     slash) and `CRON_SECRET` (same value as in Vercel). The workflow
+     starts running automatically once it's on the default branch.
+   - **Alternative — Vercel Cron** (`vercel.json`, already included):
+     works out of the box once `CRON_SECRET` is set, but Vercel's **Hobby
+     (free) plan only guarantees cron jobs run once per day**, at
+     whatever time Vercel schedules it — too coarse for a reminder set at
+     a specific time. Fine as a low-effort fallback; use GitHub Actions if
+     you actually want reminders to fire near their configured time.
+
+`scheduleReminders()` (`lib/notifications.ts`) computes each reminder's due
+time in *that reminder's own user's timezone* (from `Settings.timezone`,
+default `Asia/Kolkata`) and sends a push for any reminder due within the
+last few minutes, so it doesn't matter that different users are in
+different timezones or that the cron doesn't land on the exact minute.
+
+---
+
+## 13. Security fix: removed an authentication backdoor
+
+`lib/auth.ts` previously included a `CredentialsProvider` labeled
+"Developer Mode" whose `authorize()` unconditionally returned a valid
+logged-in user with **no credential check at all** — anyone who clicked
+the "Developer Demo Mode" button on `/login` (a real, publicly visible
+button) got full access to the app as a fake account, no password, no
+OAuth, nothing. This has been removed entirely — both the provider in
+`lib/auth.ts` and the button in `app/login/page.tsx`. Google and GitHub
+OAuth are the only ways to sign in now.
+
+If you were relying on that button for local testing, sign in with a real
+Google or GitHub account in development instead — there's no safe way to
+keep a credential-less bypass in a codebase that also gets deployed
+publicly.
+
+## 14. Session persistence
+
+NextAuth's JWT session now has an explicit `maxAge` of 60 days (previously
+unset, which defaults to 30 days) set on both `session` and `jwt` in
+`lib/auth.ts`. Once someone signs in with Google or GitHub in a browser,
+they stay signed in on that browser for 60 days (or until they explicitly
+sign out) — no repeat login prompts on return visits. This is standard
+browser-cookie-based persistence: it's per-browser, not per-device, and
+doesn't survive clearing cookies or switching browsers.
+
+## 15. Design system: "Field Journal"
+
+The previous look — near-black background, a single bright violet accent,
+a rainbow `135deg` gradient — is a recognizable generic-AI-product
+pattern, not a deliberate choice, and it's what made the app feel
+templated rather than designed. The system was rebuilt around a specific
+idea instead: **a hand-annotated trail map**, tying the visual language
+directly to what "RoadMaper" actually is — a tool for tracking a long
+journey through material, in named phases, toward named checkpoints.
+
+**Color** (`app/globals.css` `:root`): warm ink instead of blue-black
+(`--bg: #14120F`), parchment instead of pure white (`--text1: #F4EEE2`),
+and a brass/gold primary accent instead of violet (`--accent: #C88A3D`) —
+like a compass or foil lettering on a map, not a SaaS-dashboard purple.
+Secondary accents (pine green, rust, ochre, slate) replace the previous
+neon semantic colors with muted, warm-family equivalents, including the
+seven user-selectable roadmap colors (`BAR`/`colorOptions` in
+`app/dashboard/page.tsx` and `app/roadmap/[id]/page.tsx`) — existing
+roadmaps with `color: 'violet'` in the database automatically render in
+the new brass tone with no data migration needed, since only the hex each
+name maps to changed, not the stored name itself.
+
+**Type** (`app/layout.tsx`): three faces instead of the default system
+font — **Fraunces** (a warm serif with real character) for headings and
+big numbers, **IBM Plex Sans** for UI/body text, **IBM Plex Mono** for
+data-like figures (day counts, streaks, timestamps) via the `.stat-figure`
+class. Loaded through `next/font/google` (no FOUC, self-hosted by Next.js
+at build time, no extra runtime request to Google Fonts).
+
+**Signature motif**: a dotted "route line" connecting waypoints
+(`.route-line` / `.route-dot` in `app/globals.css`), applied to the
+sidebar navigation — each nav item is a stop along a path, with the
+current page shown as a filled waypoint. This is meant to be reused
+anywhere else a sequence of steps should read as a journey rather than a
+plain list (e.g. a future phase/week timeline).
+
+**What this pass covered**: every hardcoded color in `app/**/*.tsx` and
+`components/**/*.tsx` (buttons, gradients, borders, chips, shadows) was
+swept to the new palette — including values in `rgba()` form, which a
+plain hex find-and-replace would have missed. The marketing pages
+(`/home`, `/pricing`, `/about`) keep their original copy, layout, and
+structure exactly as built — only their color values changed, consistent
+with the rest of the app.
+
+**Accessibility**: contrast-checked every text/background pairing in the
+new palette against WCAG AA. Three colors initially fell short for
+normal-size text (`--text3` at 3.96:1, rust/danger at 4.16:1, slate/info
+at 4.21:1 — all against the `#14120F` background) and were nudged
+slightly lighter (barely perceptible) to clear the 4.5:1 threshold; every
+other pairing (parchment body text, brass accent, pine/success, dark text
+on brass buttons) already passed with margin to spare.
+
+**What this pass didn't do** (worth doing next, but out of scope here):
+apply the route-line motif to other sequential UI (task lists, phase
+timelines); revisit spacing/radius tokens; check contrast for any color
+combinations introduced after this pass.
+---
+
+## 16. UI/UX polish pass
+
+- **Real streak, not a formula.** The dashboard used to show
+  `Math.min(9, active.length + 2)` as a "streak" — a number derived from
+  how many roadmaps you had, not anything you'd actually done. Replaced
+  with `app/api/stats/route.ts`, which computes a real current streak,
+  longest streak, and today/all-time completion counts from actual
+  `Task.doneAt` timestamps, correctly bucketed into calendar days in the
+  user's own timezone (not UTC).
+- **Guided onboarding.** A user with zero roadmaps now sees a 3-step
+  "how this works" walkthrough (`app/dashboard/page.tsx`) instead of a
+  single bare button.
+- **Skeleton loading screens** (`components/ui/PageState.tsx`:
+  `DashboardSkeleton`, `RoadmapDetailSkeleton`, `TodaySkeleton`,
+  `ListSkeleton`) replace plain spinners on the dashboard, roadmap detail,
+  and today pages — the shape of the real layout is visible immediately.
+- **Richer empty/error states** — `EmptyState` now takes a lucide icon in
+  a colored badge instead of plain text, used for "no active roadmaps" and
+  "all caught up" on `/today`.
+- **Micro-animations**: a small CSS-only confetti burst
+  (`components/ui/Confetti.tsx`, no external dependency) plays when a task
+  is marked done, on both the roadmap detail checklist and `/today`; the
+  checkmark itself pops in (`.check-pop`); the dashboard's streak card
+  glows (`.streak-hot`) once the streak reaches 3 days.
+- **Mobile bottom nav**: the active tab now has a small sliding indicator
+  bar and the icon lifts slightly, instead of just a color change.
+- **Light theme.** `[data-theme="light"]` in `app/globals.css` is a full
+  second palette ("Field Journal, daylight" — parchment background, dark
+  ink text, darkened accent colors re-verified against WCAG AA since the
+  dark-mode brass fails contrast on a light background). Toggle it from
+  the sidebar (sun/moon icon next to sign-out) or `/settings` →
+  Appearance. Applied via `lib/theme-client.ts`: an inline script in
+  `app/layout.tsx`'s `<head>` sets the theme from `localStorage` before
+  paint (no flash-of-wrong-theme), and the choice is also synced to
+  `Settings.theme` so it follows the user to a new device once they've
+  visited `/settings` there at least once.

@@ -10,19 +10,20 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowLeft, BarChart2, Trash2, Edit2, Plus, X, Save } from 'lucide-react'
-import { PageSpinner } from '@/components/ui/PageState'
+import { Confetti } from '@/components/ui/Confetti'
+import { RoadmapDetailSkeleton } from '@/components/ui/PageState'
 
 const CHIP: Record<string, string> = { sql: 'chip-sql', python: 'chip-python', bi: 'chip-bi', ai: 'chip-ai', git: 'chip-git', js: 'chip-js' }
-const BAR: Record<string, string> = { violet: '#7c3aed', blue: '#2563eb', green: '#16a34a', amber: '#d97706', red: '#dc2626', teal: '#0d9488', pink: '#db2777' }
+const BAR: Record<string, string> = { violet: '#C88A3D', blue: '#6480A2', green: '#5B8A72', amber: '#C9A227', red: '#BB6453', teal: '#4C8C89', pink: '#B6708C' }
 
 const colorOptions = [
-  { value: 'violet', label: 'Violet', hex: '#7c3aed' },
-  { value: 'blue', label: 'Blue', hex: '#2563eb' },
-  { value: 'green', label: 'Green', hex: '#16a34a' },
-  { value: 'amber', label: 'Amber', hex: '#d97706' },
-  { value: 'red', label: 'Red', hex: '#dc2626' },
-  { value: 'teal', label: 'Teal', hex: '#0d9488' },
-  { value: 'pink', label: 'Pink', hex: '#db2777' },
+  { value: 'violet', label: 'Brass', hex: '#C88A3D' },
+  { value: 'blue', label: 'Slate', hex: '#6480A2' },
+  { value: 'green', label: 'Pine', hex: '#5B8A72' },
+  { value: 'amber', label: 'Ochre', hex: '#C9A227' },
+  { value: 'red', label: 'Rust', hex: '#BB6453' },
+  { value: 'teal', label: 'Teal', hex: '#4C8C89' },
+  { value: 'pink', label: 'Rose', hex: '#B6708C' },
 ]
 
 export default function RoadmapPage() {
@@ -32,6 +33,7 @@ export default function RoadmapPage() {
   const [loading, setLoading] = useState(true)
   const [activeProj, setActiveProj] = useState(-1) // Default to -1 (All Days)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [celebrateId, setCelebrateId] = useState<string | null>(null)
 
   // Edit Mode States
   const [editMode, setEditMode] = useState(false)
@@ -70,6 +72,10 @@ export default function RoadmapPage() {
   async function toggleTask(task: any) {
     const newDone = !task.done
     setRm((p: any) => ({ ...p, tasks: p.tasks.map((t: any) => t.id === task.id ? { ...t, done: newDone } : t) }))
+    if (newDone) {
+      setCelebrateId(task.id)
+      setTimeout(() => setCelebrateId((cur: string | null) => cur === task.id ? null : cur), 850)
+    }
     await fetch(`/api/tasks/${task.id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ done: newDone })
@@ -238,7 +244,7 @@ export default function RoadmapPage() {
     }))
   }
 
-  if (loading || !rm) return <PageSpinner label="Loading roadmap..." />
+  if (loading || !rm) return <RoadmapDetailSkeleton />
 
   const projects = rm.projects || []
   const tasks = rm.tasks || []
@@ -346,8 +352,11 @@ export default function RoadmapPage() {
           return (
             <div key={task.id} className="card-feed" style={{ opacity: task.done ? 0.65 : 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px' }}>
-                <button onClick={() => toggleTask(task)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: task.done ? 'var(--green)' : 'var(--text4)', display: 'flex', flexShrink: 0 }}>
-                  {task.done ? <CheckCircle2 size={20} /> : <Circle size={20} />}
+                <button onClick={() => toggleTask(task)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: task.done ? 'var(--green)' : 'var(--text4)', display: 'flex', flexShrink: 0, position: 'relative' }}>
+                  <span className={celebrateId === task.id ? 'check-pop' : ''} style={{ display: 'flex' }}>
+                    {task.done ? <CheckCircle2 size={20} /> : <Circle size={20} />}
+                  </span>
+                  <Confetti fire={celebrateId === task.id} />
                 </button>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
@@ -609,18 +618,18 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(9, 9, 11, 0.85)', backdropFilter: 'blur(8px)',
+      background: 'rgba(20,18,15,0.85)', backdropFilter: 'blur(8px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100,
       padding: '20px'
     }}>
       <div style={{
-        background: '#18181b', border: '1px solid rgba(255, 255, 255, 0.08)',
+        background: '#1C1915', border: '1px solid var(--border2)',
         borderRadius: '16px', width: '100%', maxWidth: '500px',
         boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', overflow: 'hidden'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(244,238,226,0.06)' }}>
           <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#fff', margin: 0 }}>{title}</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255, 255, 255, 0.4)' }}><X size={18} /></button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(244,238,226,0.4)' }}><X size={18} /></button>
         </div>
         <div style={{ padding: '20px', maxHeight: '75vh', overflowY: 'auto' }}>
           {children}

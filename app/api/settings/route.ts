@@ -34,11 +34,13 @@ export async function PATCH(req: NextRequest) {
       ...(body.timezone !== undefined && { timezone: body.timezone }),
       ...(body.notificationsEnabled !== undefined && { notificationsEnabled: body.notificationsEnabled }),
       ...(body.defaultReminderTime !== undefined && { defaultReminderTime: body.defaultReminderTime }),
+      ...(body.theme !== undefined && { theme: body.theme }),
     },
     update: {
       ...(body.timezone !== undefined && { timezone: body.timezone }),
       ...(body.notificationsEnabled !== undefined && { notificationsEnabled: body.notificationsEnabled }),
       ...(body.defaultReminderTime !== undefined && { defaultReminderTime: body.defaultReminderTime }),
+      ...(body.theme !== undefined && { theme: body.theme }),
     },
   })
   return NextResponse.json(updated)

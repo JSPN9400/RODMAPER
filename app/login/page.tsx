@@ -15,14 +15,14 @@ export default function LoginPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'radial-gradient(ellipse at top, #1a0a2e 0%, #000 60%)',
+      background: 'radial-gradient(ellipse at top, #241a10 0%, #14120F 60%)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px'
     }}>
       {/* Glow */}
       <div style={{
         position: 'fixed', top: '20%', left: '50%', transform: 'translate(-50%,-50%)',
         width: '600px', height: '400px', borderRadius: '50%',
-        background: 'radial-gradient(ellipse, rgba(124,58,237,0.15) 0%, transparent 70%)',
+        background: 'radial-gradient(ellipse, rgba(200,138,61,0.15) 0%, transparent 70%)',
         pointerEvents: 'none'
       }} />
 
@@ -31,25 +31,25 @@ export default function LoginPage() {
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
           <div style={{
             width: '56px', height: '56px', borderRadius: '16px',
-            background: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
+            background: 'linear-gradient(135deg, #C88A3D, #E8C084)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '22px', fontWeight: '800', color: '#fff',
-            margin: '0 auto 16px', boxShadow: '0 8px 32px rgba(124,58,237,0.4)'
+            margin: '0 auto 16px', boxShadow: '0 8px 32px rgba(200,138,61,0.4)'
           }}>R</div>
           <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#fff', margin: '0 0 6px', letterSpacing: '-0.5px' }}>RoadMaper</h1>
-          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>
+          <p style={{ fontSize: '14px', color: 'rgba(244,238,226,0.4)', margin: 0 }}>
             AI-powered learning for any goal
           </p>
         </div>
 
         {/* Card */}
         <div style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.1)',
+          background: 'rgba(244,238,226,0.04)',
+          border: '1px solid rgba(244,238,226,0.1)',
           borderRadius: '20px', padding: '28px',
           backdropFilter: 'blur(20px)'
         }}>
-          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginBottom: '16px' }}>
+          <p style={{ fontSize: '13px', color: 'rgba(244,238,226,0.5)', textAlign: 'center', marginBottom: '16px' }}>
             Sign in to continue
           </p>
 
@@ -59,7 +59,7 @@ export default function LoginPage() {
             disabled={!!loading}
             style={{
               width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-              height: '46px', borderRadius: '12px', background: '#fff', color: '#1a1a1a',
+              height: '46px', borderRadius: '12px', background: '#fff', color: '#241F18',
               border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
               fontSize: '14px', fontWeight: '600', marginBottom: '10px',
               opacity: loading && loading !== 'google' ? 0.4 : 1,
@@ -85,8 +85,8 @@ export default function LoginPage() {
             style={{
               width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
               height: '46px', borderRadius: '12px',
-              background: 'rgba(255,255,255,0.06)', color: '#fff',
-              border: '1px solid rgba(255,255,255,0.12)',
+              background: 'rgba(244,238,226,0.06)', color: '#fff',
+              border: '1px solid rgba(244,238,226,0.12)',
               cursor: loading ? 'not-allowed' : 'pointer',
               fontSize: '14px', fontWeight: '600',
               opacity: loading && loading !== 'github' ? 0.4 : 1,
@@ -101,38 +101,9 @@ export default function LoginPage() {
             )}
             Continue with GitHub
           </button>
-
-          {/* Demo Mode */}
-          <div style={{ display: 'flex', alignItems: 'center', margin: '14px 0' }}>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
-            <span style={{ padding: '0 10px', fontSize: '11px', color: 'rgba(255,255,255,0.25)' }}>or</span>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
-          </div>
-
-          <button
-            onClick={() => { setLoading('credentials'); signIn('credentials', { callbackUrl: '/dashboard' }) }}
-            disabled={!!loading}
-            style={{
-              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-              height: '46px', borderRadius: '12px',
-              background: 'linear-gradient(135deg, #7c3aed, #9333ea)', color: '#fff',
-              border: 'none',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              fontSize: '14px', fontWeight: '600',
-              opacity: loading && loading !== 'credentials' ? 0.4 : 1,
-              fontFamily: 'inherit', transition: 'all 0.15s',
-              boxShadow: '0 4px 15px rgba(124,58,237,0.3)'
-            }}>
-            {loading === 'credentials' ? (
-              <div className="spinner" style={{ width: '16px', height: '16px' }} />
-            ) : (
-              <span>✨</span>
-            )}
-            Developer Demo Mode
-          </button>
         </div>
 
-        <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', textAlign: 'center', marginTop: '16px' }}>
+        <p style={{ fontSize: '11px', color: 'rgba(244,238,226,0.25)', textAlign: 'center', marginTop: '16px' }}>
           By continuing you agree to our Terms & Privacy Policy
         </p>
       </div>

@@ -15,7 +15,7 @@ export default function MarketingNav() {
       className="fixed top-0 left-0 right-0 z-50 h-[60px] flex items-center justify-between border-b border-white/[0.06] bg-zinc-950/85 backdrop-blur-md px-4 sm:px-10"
     >
       <Link href="/" className="flex items-center gap-2.5 no-underline">
-        <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #7c3aed, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '800', color: '#fff' }}>R</div>
+        <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #C88A3D, #E8C084)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '800', color: '#fff' }}>R</div>
         <span style={{ fontSize: '15px', fontWeight: '700', color: '#fff', letterSpacing: '-0.3px' }}>RoadMaper</span>
       </Link>
       <div className="hidden md:flex items-center gap-8">
@@ -25,7 +25,7 @@ export default function MarketingNav() {
       </div>
       <div className="flex items-center gap-1 sm:gap-3">
         <Link href="/login" className="text-xs sm:text-sm text-white/60 hover:text-white transition no-underline py-1.5 px-2 sm:px-4">Sign in</Link>
-        <Link href="/login" className="text-[11px] sm:text-sm font-medium text-white no-underline py-1.5 px-3 sm:px-4.5 bg-violet-600 hover:bg-violet-700 rounded-lg transition shrink-0 whitespace-nowrap">Get started free</Link>
+        <Link href="/login" className="text-[11px] sm:text-sm font-medium text-white no-underline py-1.5 px-3 sm:px-4.5 cta-brass rounded-lg transition shrink-0 whitespace-nowrap">Get started free</Link>
       </div>
     </nav>
   )

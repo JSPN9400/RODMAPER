@@ -562,3 +562,38 @@ combinations introduced after this pass.
   paint (no flash-of-wrong-theme), and the choice is also synced to
   `Settings.theme` so it follows the user to a new device once they've
   visited `/settings` there at least once.
+
+---
+
+## 17. Build fixes
+
+- **Missing `web-push` dependency.** `lib/notifications.ts` calls
+  `require('web-push')` but the package was never added to
+  `package.json`, breaking the production build with
+  `Module not found: Can't resolve 'web-push'`. Added as a real
+  dependency (plus `@types/web-push` for editor support).
+- **Removed a risky mock-database fallback.** `lib/prisma.ts` had been
+  rewritten to fall back to a local JSON-file "database"
+  (`prisma-fallback-db.json`) whenever `DATABASE_URL` was missing, empty,
+  or contained the substring `"mock"`. On Vercel's serverless filesystem
+  this wouldn't actually work (the filesystem is read-only outside `/tmp`,
+  and doesn't persist between invocations anyway) — worse, it would fail
+  *silently*, masking a real misconfiguration behind confusing
+  data-disappears-for-no-reason bugs instead of a clear connection error.
+  Reverted to a plain, correct `PrismaClient` singleton. A missing
+  `DATABASE_URL` now logs a clear error and every DB-backed route fails
+  loudly, as it should.
+- **ESLint crashing (silently, non-fatally) during every build.**
+  `eslint@9` requires the "flat config" format
+  (`eslint.config.mjs`) — the project still had a legacy
+  `.eslintrc.json`, and `eslint-config-next` was pinned to a `16.x`
+  release line meant for a Next.js major version the project isn't on
+  (it runs Next 15.5.20). Together these caused a
+  `Converting circular structure to JSON` crash in the linter on every
+  build. `next build` treats a crashing linter as non-fatal and just
+  skips linting, so builds kept succeeding — but no linting was actually
+  running. Replaced `.eslintrc.json` with `eslint.config.mjs` (using
+  `@eslint/eslintrc`'s `FlatCompat` to bridge the legacy
+  `next/core-web-vitals` shareable config into flat format) and
+  re-pinned `eslint-config-next` to the `15.x` line that matches the
+  installed Next.js version.

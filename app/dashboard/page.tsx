@@ -9,7 +9,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Compass, Flame, MoreHorizontal, PenLine, Plus, Sparkles } from 'lucide-react'
+import { ArrowRight, Compass, Flame, MoreHorizontal, PenLine, Plus, Sparkles, Target, ShieldCheck } from 'lucide-react'
 import { PageError, DashboardSkeleton, EmptyState } from '@/components/ui/PageState'
 
 const BAR: Record<string, string> = {
@@ -42,6 +42,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const [accountability, setAccountability] = useState<any>(null)
+  const [accLoading, setAccLoading] = useState(true)
+
   useEffect(() => {
     Promise.all([
       fetch('/api/roadmaps').then(async (r) => {
@@ -57,7 +60,26 @@ export default function DashboardPage() {
       })
       .catch((err) => setError(err.message || 'Failed to load dashboard'))
       .finally(() => setLoading(false))
+
+    // Fetched separately and non-blocking — this can trigger an AI call
+    // (challenge generation) server-side and shouldn't delay the rest of
+    // the dashboard rendering.
+    fetch('/api/accountability')
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setAccountability)
+      .catch(() => setAccountability(null))
+      .finally(() => setAccLoading(false))
   }, [])
+
+  async function completeChallenge(id: string) {
+    setAccountability((prev: any) => ({ ...prev, challenge: { ...prev.challenge, completed: true } }))
+    await fetch(`/api/challenges/${id}`, { method: 'PATCH' })
+  }
+
+  async function dismissChallenge(id: string) {
+    setAccountability((prev: any) => ({ ...prev, challenge: null }))
+    await fetch(`/api/challenges/${id}`, { method: 'DELETE' })
+  }
 
   if (loading) return <DashboardSkeleton />
   if (error) return <PageError title="Dashboard could not load" message={error} />
@@ -139,6 +161,58 @@ export default function DashboardPage() {
           <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '2px' }}>tasks completed</div>
         </div>
       </div>
+
+      {!accLoading && accountability?.challenge && (
+        <div className="card-feed" style={{ padding: '16px', marginBottom: '18px', border: '1px solid var(--accent-border)', background: 'var(--accent-bg)' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+            <Target size={16} style={{ color: 'var(--accent3)', flexShrink: 0, marginTop: '2px' }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '10px', fontWeight: '700', color: 'var(--accent3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '3px' }}>Recovery challenge</div>
+              <div style={{ fontSize: '14px', fontWeight: '700', marginBottom: '3px' }}>{accountability.challenge.title}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '10px' }}>{accountability.challenge.description}</div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => completeChallenge(accountability.challenge.id)} className="btn btn-primary btn-sm">
+                  <Sparkles size={12} /> Done
+                </button>
+                <button onClick={() => dismissChallenge(accountability.challenge.id)} className="btn btn-ghost btn-sm">Not now</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!accLoading && accountability && accountability.tasksReachedByNow > 0 && (
+        <div className="card-feed" style={{ padding: '16px', marginBottom: '18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+              <ShieldCheck size={14} style={{ color: 'var(--accent3)' }} />
+              <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text2)' }}>Reliability</span>
+            </div>
+            <span className="stat-figure" style={{ fontSize: '16px', fontWeight: '800', color: accountability.reliabilityScore >= 75 ? 'var(--green)' : accountability.reliabilityScore >= 50 ? 'var(--amber)' : 'var(--red)' }}>
+              {accountability.reliabilityScore}%
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '32px', marginBottom: '8px' }}>
+            {accountability.weekdayPattern.map((w: any) => {
+              const max = Math.max(...accountability.weekdayPattern.map((x: any) => x.count), 1)
+              const h = Math.max(4, Math.round((w.count / max) * 32))
+              return (
+                <div key={w.day} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                  <div style={{ width: '100%', height: `${h}px`, borderRadius: '2px', background: w.count > 0 ? 'var(--accent)' : 'var(--bg4)' }} />
+                  <span style={{ fontSize: '9px', color: 'var(--text4)' }}>{w.day[0]}</span>
+                </div>
+              )
+            })}
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--text3)' }}>
+            {accountability.trend === 'improving' && 'Trending up — more active than last week.'}
+            {accountability.trend === 'declining' && 'Slower than last week — nothing urgent, just noting it.'}
+            {accountability.trend === 'steady' && 'Steady pace, same as last week.'}
+            {accountability.trend === 'not_enough_data' && 'Keep going — trend shows up after a bit more history.'}
+            {accountability.weakestWeekday && ` ${accountability.weakestWeekday}s tend to be your quietest day.`}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         {active.map((rm, index) => {

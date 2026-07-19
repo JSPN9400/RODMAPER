@@ -35,7 +35,7 @@ export type DailyRoadmapTask = {
   topic: string
   exercises: string[]
   miniProject: string
-  resources: { name: string; url: string }[]
+  resources: { name: string; url: string; type?: string }[]
   estimatedHours: number
   difficulty: 1 | 2 | 3 | 4 | 5
   schedule: {
@@ -73,7 +73,7 @@ export type LongTermPhase = {
   weeklyMilestones: WeeklyMilestone[]
   keyTopicsChecklist: string[]
   mockTestSchedule: string[]
-  resources: { name: string; type: 'book' | 'online'; url?: string }[]
+  resources: { name: string; type?: string; url?: string }[]
   progressCheckpoints: string[]
 }
 
@@ -93,6 +93,33 @@ function getClient() {
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) throw new Error('GROQ_API_KEY is not configured')
   return new Groq({ apiKey })
+}
+
+// LLMs reliably hallucinate specific deep-link URLs — they don't have live
+// web access, so a URL that "looks right" for a real course/article/video
+// is frequently wrong or dead. Rather than trust whatever URL the model
+// returns, every resource gets its URL rebuilt here from its name (and a
+// light heuristic on platform), pointing at a search results page that is
+// *guaranteed* to load and land the user on genuinely relevant results —
+// strictly better than a broken 404 from an invented deep link.
+function buildResourceUrl(name: string, hint?: string): string {
+  const q = encodeURIComponent(name)
+  const text = `${name} ${hint || ''}`.toLowerCase()
+  if (text.includes('youtube') || text.includes('video') || text.includes('playlist')) {
+    return `https://www.youtube.com/results?search_query=${q}`
+  }
+  if (text.includes('book') || text.includes('textbook')) {
+    return `https://www.google.com/search?tbm=bks&q=${q}`
+  }
+  if (text.includes('docs') || text.includes('documentation') || text.includes('official')) {
+    return `https://www.google.com/search?q=${q}+official+documentation`
+  }
+  return `https://www.google.com/search?q=${q}`
+}
+
+function fixResourceUrls<T extends { name: string; url?: string; type?: string }>(resources: T[] | undefined): T[] {
+  if (!Array.isArray(resources)) return []
+  return resources.map((r) => ({ ...r, url: buildResourceUrl(r.name, r.type) }))
 }
 
 async function geminiJSON<T>(systemPrompt: string, userPrompt: string): Promise<T> {
@@ -168,11 +195,13 @@ export function detectGoalType(goal: string): GoalType {
 }
 
 export async function generateShortTermRoadmap(input: ShortTermRoadmapInput): Promise<ShortTermRoadmap> {
-  const systemPrompt = `You are an expert learning coach. Create a practical day-by-day roadmap.
+  const systemPrompt = `You are an expert learning coach. Create a practical, detailed day-by-day roadmap.
 CRITICAL: Every day must have HANDS-ON practice, not just reading.
 Difficulty must increase gradually with this distribution: easy 30%, medium 50%, hard 20%.
 Use this daily split: Morning theory 30%, Afternoon practice problems 50%, Evening mini project or review 20%.
-Return ONLY valid JSON. Use real free URLs only.`
+Be specific, not generic — name actual subtopics, actual tools/libraries, actual problem types, not vague placeholders like "practice basics". Each day's topic should read like a real lesson plan, not a one-line label: 2-3 sentences covering what's being learned and why it matters at this point in the sequence.
+Give 2-3 resources per day (not just 1), each with a "name" (a specific, real, well-known resource — e.g. "freeCodeCamp Python course", "official React docs: Hooks") and a "type" (one of: youtube, docs, book, course, article). Do not invent a "url" — the app resolves a working link from name+type itself, so just describe the resource accurately and specifically.
+Return ONLY valid JSON, no markdown fences.`
 
   const userPrompt = `Create a short-term roadmap for:
 Goal: ${input.goal}
@@ -195,10 +224,10 @@ Return exactly this JSON shape:
   "tasks": [
     {
       "day": 1,
-      "topic": "string",
-      "exercises": ["string"],
-      "miniProject": "string",
-      "resources": [{"name":"string","url":"https://..."}],
+      "topic": "string, 2-3 sentences, specific",
+      "exercises": ["string, specific and concrete, not generic"],
+      "miniProject": "string, a real small deliverable for the day",
+      "resources": [{"name":"specific real resource name","type":"youtube|docs|book|course|article"}],
       "estimatedHours": ${input.hoursPerDay},
       "difficulty": 1,
       "schedule": {
@@ -210,14 +239,18 @@ Return exactly this JSON shape:
   ]
 }`
 
-  return groqJSON<ShortTermRoadmap>(systemPrompt, userPrompt, 7000)
+  const result = await groqJSON<ShortTermRoadmap>(systemPrompt, userPrompt, 16000)
+  result.tasks = result.tasks.map((t) => ({ ...t, resources: fixResourceUrls(t.resources) }))
+  return result
 }
 
 export async function generateLongTermRoadmap(input: LongTermRoadmapInput): Promise<LongTermRoadmap> {
-  const systemPrompt = `You are an expert academic and career coach. Create a structured long-term study plan.
+  const systemPrompt = `You are an expert academic and career coach. Create a structured, detailed long-term study plan.
 CRITICAL: Include mock test schedules, revision cycles, and realistic milestones.
 Weekly structure should be: Mon-Fri new topics, Saturday practice tests/problems, Sunday revision and review.
-Return ONLY valid JSON.`
+Be specific, not generic — name actual subtopics, actual exam sections/chapters, actual skills, not vague placeholders. Each phase's weekly milestones should read like a real study plan: what's being covered, why it matters at this stage, and a concrete, checkable milestone.
+Give 2-4 resources per phase (not just 1), each with a "name" (a specific, real, well-known resource — e.g. "NCERT Physics Class 12", "official exam syllabus PDF") and a "type" (one of: youtube, docs, book, course, article). Do not invent a "url" — the app resolves a working link from name+type itself, so just describe the resource accurately and specifically.
+Return ONLY valid JSON, no markdown fences.`
 
   const userPrompt = `Create a long-term roadmap for:
 Goal: ${input.goal}
@@ -246,19 +279,21 @@ Return exactly this JSON shape:
       "weeklyMilestones": [
         {
           "week": 1,
-          "focus": "string",
-          "milestone": "string",
+          "focus": "string, specific",
+          "milestone": "string, 2-3 sentences, concrete and checkable",
           "practiceTest": "string",
           "review": "string"
         }
       ],
-      "keyTopicsChecklist": ["string"],
+      "keyTopicsChecklist": ["string, specific subtopics"],
       "mockTestSchedule": ["string"],
-      "resources": [{"name":"string","type":"book","url":"https://..."}],
+      "resources": [{"name":"specific real resource name","type":"youtube|docs|book|course|article"}],
       "progressCheckpoints": ["string"]
     }
   ]
 }`
 
-  return groqJSON<LongTermRoadmap>(systemPrompt, userPrompt, 8000)
+  const result = await groqJSON<LongTermRoadmap>(systemPrompt, userPrompt, 16000)
+  result.phases = result.phases.map((p) => ({ ...p, resources: fixResourceUrls(p.resources) }))
+  return result
 }

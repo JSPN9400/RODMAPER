@@ -10,12 +10,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import Image from 'next/image'
-import { LayoutDashboard, Zap, Map, Plus, Bell, BarChart2, Settings, LogOut, Brain, Sun, Moon } from 'lucide-react'
+import { LayoutDashboard, Zap, Map, Plus, Bell, BarChart2, Settings, LogOut, Brain, Sun, Moon, MessageCircle } from 'lucide-react'
 import { useTheme } from '@/lib/theme-client'
 
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/today', label: 'Today', icon: Zap, badge: 'LIVE' },
+  { href: '/mentor', label: 'AI Mentor', icon: MessageCircle, badge: 'NEW' },
   { href: '/roadmap', label: 'Roadmaps', icon: Map },
   { href: '/create', label: 'New Roadmap', icon: Plus },
   { href: '/insights', label: 'AI Insights', icon: Brain },
@@ -27,8 +28,8 @@ const NAV = [
 const MOBILE_NAV = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard },
   { href: '/today', label: 'Today', icon: Zap },
+  { href: '/mentor', label: 'Mentor', icon: MessageCircle },
   { href: '/create', label: 'Create', icon: Plus },
-  { href: '/reports', label: 'Reports', icon: BarChart2 },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 

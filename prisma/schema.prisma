@@ -20,6 +20,8 @@ model User {
   roadmaps      Roadmap[]
   settings      Settings?
   pushSubs      PushSubscription[]
+  messages      Message[]
+  challenges    Challenge[]
 }
 
 model Account {
@@ -68,6 +70,8 @@ model Roadmap {
   reminders   Reminder[]
   phases      Phase[]
   report      Report?
+  messages    Message[]
+  challenges  Challenge[]
   @@index([userId, status])
 }
 
@@ -174,6 +178,43 @@ model Report {
   summary        String?
   generatedAt    DateTime @default(now())
   roadmap        Roadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+}
+
+// AI Mentor chat history — one row per message, both sides of the
+// conversation. `roadmapId` is optional context (which roadmap the
+// message was about, if any); global/general chat leaves it null.
+// Reading the last N rows for a user is what gives the mentor "memory"
+// of earlier conversations — see lib/mentor.ts.
+model Message {
+  id        String   @id @default(cuid())
+  userId    String
+  roadmapId String?
+  role      String // 'user' | 'assistant'
+  content   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roadmap   Roadmap? @relation(fields: [roadmapId], references: [id], onDelete: SetNull)
+  @@index([userId, createdAt])
+}
+
+// Adaptive "recovery challenge" — a small, achievable catch-up action
+// offered when the user has fallen behind pace or their streak recently
+// broke. Deliberately framed constructively (see lib/accountability.ts)
+// rather than punitively: shame-based mechanics measurably hurt
+// follow-through, so this is a nudge back on track, not a penalty.
+model Challenge {
+  id          String    @id @default(cuid())
+  userId      String
+  roadmapId   String?
+  title       String
+  description String?
+  type        String // 'recovery' | 'streak_save' | 'catchup'
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roadmap     Roadmap?  @relation(fields: [roadmapId], references: [id], onDelete: SetNull)
+  @@index([userId, completed])
 }
 
 enum RoadmapStatus {

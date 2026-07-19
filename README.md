@@ -597,3 +597,116 @@ combinations introduced after this pass.
   `next/core-web-vitals` shareable config into flat format) and
   re-pinned `eslint-config-next` to the `15.x` line that matches the
   installed Next.js version.
+
+---
+
+## 18. AI Mentor (Phase A of the roadmap-companion features)
+
+A persistent, context-aware chat coach — `/mentor` (also on both the
+desktop sidebar and mobile bottom nav).
+
+- **`Message` model** (`prisma/schema.prisma`) — one row per message,
+  both sides of the conversation, tied to the user (and optionally a
+  roadmap). This is what gives the mentor real memory: every reply is
+  generated with the last 20 messages as actual conversation history,
+  not just the current message in isolation.
+- **`lib/mentor.ts`** — `askMentor(userId, roadmapId, message)`:
+  1. Builds a live context string from the user's *actual* active
+     roadmaps (title, goal, % done, current pace) via `buildContext()`.
+  2. Computes which tasks look overdue — since roadmaps here are
+     self-paced (`Task.day` is a relative day number, not a calendar
+     date), "overdue" means the task's day number has fallen behind
+     `roadmap.createdAt`-elapsed days by more than a 1-day grace period,
+     not a hard calendar deadline. This list is handed to the model so
+     it can naturally ask about a specific missed task rather than the
+     student having to bring it up.
+  3. Calls Groq (`llama-3.3-70b-versatile`) with a proper
+     `messages: [system, ...history, user]` array for real multi-turn
+     conversation; falls back to Gemini (flattened into a single prompt,
+     since multi-turn `contents` shape wasn't verified against the
+     pinned SDK version) if Groq is unavailable or fails.
+  4. Persists both the user's message and the reply to `Message`.
+- **`app/api/mentor/route.ts`** — `GET` (history), `POST` (send a
+  message), `DELETE` (clear the conversation, which also clears the
+  model's memory of it, since memory is just "the last N rows").
+- **`app/mentor/page.tsx`** — chat UI with a typing indicator, optimistic
+  message rendering, and starter-prompt suggestions when the
+  conversation is empty.
+
+**Not built yet** (later phases, by design — see the phased breakdown
+given when this was scoped): accountability/challenge system, behavior
+pattern detection across sessions, predictive completion dates, skill
+graph, career readiness score, weekly reflection, dynamic roadmap
+adjustment, personalized revision planning. The `Message` history this
+phase adds is the foundation several of those will build on.
+
+---
+
+## 19. Accountability Engine (Phase B)
+
+Reliability scoring, behavior-pattern detection, and adaptive recovery
+challenges — all on the dashboard, no new page needed.
+
+- **`lib/accountability.ts`** — `computeAccountability(userId)` derives
+  everything from existing `Task`/`Roadmap` data (no new tracking table
+  needed for the stats themselves):
+  - **Reliability score**: of the tasks that "should" be done by now
+    given each roadmap's pace (`Task.day <= expected day since
+    Roadmap.createdAt`), what % actually are. Same overdue definition as
+    the AI Mentor (§18), so the two features agree with each other.
+  - **Weekday pattern**: completions grouped by weekday from
+    `Task.doneAt`, bucketed in the user's own timezone — surfaces things
+    like "Wednesdays tend to be your quietest day."
+  - **Trend**: completions in the last 7 days vs. the 7 before that.
+  - **Longest gap**: the biggest stretch between two active days —
+    computed but not yet surfaced in the UI (available on the
+    `/api/accountability` response for a future iteration).
+- **Recovery challenges, not punishment.** `getOrCreateChallenge()` only
+  creates one when there's a real signal (2+ overdue tasks, or a streak
+  that just broke) and only if the user doesn't already have an
+  incomplete one. Generated via Groq (rule-based fallback if AI is
+  unavailable) with an explicit instruction to be encouraging, not
+  guilt-tripping — shame-based nudges measurably hurt follow-through, so
+  this was deliberately built as "here's an easy way back in," not a
+  penalty. The user can mark it done or dismiss it outright
+  (`PATCH`/`DELETE /api/challenges/[id]`) — dismissing doesn't block a
+  new one from appearing later if the underlying signal is still there.
+- **Dashboard integration**: the challenge card (if any) and a
+  reliability/weekday-pattern card sit between the streak stats and the
+  roadmap list. Fetched via a separate, non-blocking `useEffect` (calling
+  `/api/accountability` can trigger an AI call for challenge generation
+  server-side, and shouldn't delay the rest of the dashboard rendering).
+
+**Still not built** (Phases C and D): predictive completion dates,
+learning curve prediction, career readiness score, skill graph, weekly
+reflection, dynamic roadmap adjustment, personalized revision planning.
+
+---
+
+## 20. Fixed: broken resource links, and thin/generic roadmap content
+
+Two related complaints, one root cause each:
+
+- **Resource links didn't load.** The generation prompt asked the model
+  for a specific `url` directly (`"url":"https://..."`). LLMs reliably
+  hallucinate exact URLs — they don't have live web access, so a link
+  that "looks right" for a real course or article is frequently wrong or
+  dead. This isn't fixable by better prompting; no amount of instruction
+  makes a model actually know the correct current URL for an arbitrary
+  resource. Fixed by changing what the model is asked for: a resource
+  **name** and a **type** (`youtube`/`docs`/`book`/`course`/`article`),
+  never a URL. `lib/roadmap-generator.ts`'s new `buildResourceUrl()`
+  then constructs the actual link server-side — a YouTube search for
+  `type: youtube`, a Google Books search for `book`, and a Google search
+  otherwise — so every resource link is *guaranteed* to load and land on
+  genuinely relevant results, instead of a coin-flip on whether the
+  model's invented URL happens to be real.
+- **Roadmaps came out basic/generic.** Two contributing causes, both
+  fixed: (1) `max_tokens` was capped at 7000 (short-term) / 8000
+  (long-term) — for a 30+ day plan that's a very tight budget once JSON
+  structure overhead is accounted for, forcing terse, one-line content
+  per day. Raised to 16000 for both. (2) The prompts didn't ask for
+  depth — `"topic": "string"` invites a one-liner. Prompts now explicitly
+  require 2-3 sentence topic/milestone descriptions, specific
+  (non-generic) exercises and subtopics, and 2-4 resources per
+  day/phase instead of 1.

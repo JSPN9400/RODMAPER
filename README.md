@@ -757,3 +757,31 @@ generic placeholders.
 Fails open by design: if the clarify call errors or the model returns no
 questions, generation proceeds immediately with just the original form
 fields rather than blocking the user on an enhancement that didn't work.
+
+---
+
+## 23. Activity Timetable — time-of-day behavior tracking
+
+Extends the Accountability Engine (§19) with genuine time-of-day
+tracking, not just which weekday — answers "am I keeping to my usual
+schedule right now," not just "was I active this week."
+
+- **`lib/accountability.ts`** additions to `computeAccountability()`:
+  - `hourlyPattern`: completions bucketed by hour-of-day (0-23), in the
+    user's own timezone (via `localHour()`, same `Intl.DateTimeFormat`
+    approach used for dates elsewhere in the app).
+  - `typicalWindow`: the busiest rolling 3-hour block, computed by
+    sliding a window across `hourlyPattern` — surfaced as a readable
+    label like `"7 PM – 10 PM"`. Only computed once there are at least 5
+    completions total, to avoid a "pattern" of one data point.
+  - `todayStatus`: `'on_pattern'` (already active today),
+    `'too_early'` (the typical window hasn't started yet — not a red
+    flag), or `'off_pattern'` (past the usual window with no activity
+    yet today) — this is what actually answers "am I on schedule right
+    now," rather than making the user infer it from a chart.
+  - `calendarHeatmap`: last 84 days, one entry per day with a completion
+    count — the data behind a GitHub-style contribution graph.
+- **`/insights`** now opens with an "Activity Timetable" card (global,
+  not tied to a single roadmap) showing the heatmap, the hourly bar
+  chart, and a plain-language status line, before the existing
+  per-roadmap AI analysis section.

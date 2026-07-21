@@ -19,6 +19,22 @@ function localDateKey(date: Date, timeZone: string): string {
   }
 }
 
+function localHour(date: Date, timeZone: string): number {
+  try {
+    const h = new Intl.DateTimeFormat('en-US', { timeZone, hour: '2-digit', hour12: false }).format(date)
+    const n = parseInt(h, 10)
+    return n === 24 ? 0 : n
+  } catch {
+    return date.getUTCHours()
+  }
+}
+
+function formatHour(h: number): string {
+  const period = h < 12 ? 'AM' : 'PM'
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `${h12} ${period}`
+}
+
 function daysBetween(a: string, b: string): number {
   const da = new Date(a + 'T00:00:00Z').getTime()
   const db = new Date(b + 'T00:00:00Z').getTime()
@@ -33,6 +49,10 @@ export interface AccountabilityStats {
   weakestWeekday: string | null
   trend: 'improving' | 'declining' | 'steady' | 'not_enough_data'
   longestGapDays: number // biggest gap between consecutive active days, in days
+  hourlyPattern: { hour: number; count: number }[] // completions grouped by hour-of-day (0-23), all-time
+  typicalWindow: string | null // readable label for the busiest 3-hour block, e.g. "7 PM – 10 PM"
+  todayStatus: 'on_pattern' | 'off_pattern' | 'too_early' | 'not_enough_data' // is today's activity (or lack of it) consistent with the user's own typical timing
+  calendarHeatmap: { date: string; count: number }[] // last 84 days, one entry per day, oldest first
 }
 
 // Computes reliability + behavior patterns from real Task data — no
@@ -51,6 +71,7 @@ export async function computeAccountability(userId: string): Promise<Accountabil
   let tasksReachedByNow = 0
   let tasksOverdue = 0
   const doneDates: string[] = []
+  const doneTimestamps: Date[] = []
 
   for (const rm of roadmaps) {
     const elapsedDays = Math.floor((Date.now() - rm.createdAt.getTime()) / 86400000) + 1
@@ -62,7 +83,10 @@ export async function computeAccountability(userId: string): Promise<Accountabil
           if (t.day <= expectedDay - OVERDUE_GRACE_DAYS) tasksOverdue++
         }
       }
-      if (t.done && t.doneAt) doneDates.push(localDateKey(t.doneAt, tz))
+      if (t.done && t.doneAt) {
+        doneDates.push(localDateKey(t.doneAt, tz))
+        doneTimestamps.push(t.doneAt)
+      }
     }
   }
 
@@ -106,7 +130,61 @@ export async function computeAccountability(userId: string): Promise<Accountabil
     longestGapDays = Math.max(longestGapDays, gap)
   }
 
-  return { reliabilityScore, tasksReachedByNow, tasksOverdue, weekdayPattern, weakestWeekday, trend, longestGapDays }
+  // Hour-of-day distribution — when during the day this user actually
+  // does the work, not just which weekday.
+  const hourCounts = new Array(24).fill(0)
+  for (const ts of doneTimestamps) hourCounts[localHour(ts, tz)]++
+  const hourlyPattern = hourCounts.map((count, hour) => ({ hour, count }))
+
+  // Busiest 3-hour rolling window, treated as the user's "typical" study time.
+  let typicalWindow: string | null = null
+  let bestStartHour = -1
+  if (doneTimestamps.length >= 5) {
+    let bestSum = -1
+    for (let h = 0; h < 24; h++) {
+      const sum = hourCounts[h] + hourCounts[(h + 1) % 24] + hourCounts[(h + 2) % 24]
+      if (sum > bestSum) {
+        bestSum = sum
+        bestStartHour = h
+      }
+    }
+    if (bestSum > 0) {
+      typicalWindow = `${formatHour(bestStartHour)} – ${formatHour((bestStartHour + 3) % 24)}`
+    }
+  }
+
+  // Is today's activity (or the current lack of it) consistent with how
+  // this user normally behaves? Gives a plain answer to "am I on my usual
+  // schedule right now" rather than just a historical chart.
+  let todayStatus: AccountabilityStats['todayStatus'] = 'not_enough_data'
+  if (bestStartHour >= 0) {
+    const nowHour = localHour(new Date(), tz)
+    const doneToday = doneDates.filter((d) => d === today).length > 0
+    if (doneToday) {
+      todayStatus = 'on_pattern'
+    } else {
+      // How many hours (wrapping midnight) is "now" past the start of the
+      // typical window? If we're not there yet, it's simply too early to
+      // call it off-pattern.
+      const hoursPastWindowStart = (nowHour - bestStartHour + 24) % 24
+      todayStatus = hoursPastWindowStart <= 3 ? 'too_early' : 'off_pattern'
+    }
+  }
+
+  // Calendar heatmap — last 12 weeks, oldest first, for a GitHub-style view.
+  const heatmapDays = 84
+  const dateCounts = new Map<string, number>()
+  for (const key of doneDates) dateCounts.set(key, (dateCounts.get(key) || 0) + 1)
+  const calendarHeatmap: { date: string; count: number }[] = []
+  for (let i = heatmapDays - 1; i >= 0; i--) {
+    const key = localDateKey(new Date(Date.now() - i * 86400000), tz)
+    calendarHeatmap.push({ date: key, count: dateCounts.get(key) || 0 })
+  }
+
+  return {
+    reliabilityScore, tasksReachedByNow, tasksOverdue, weekdayPattern, weakestWeekday,
+    trend, longestGapDays, hourlyPattern, typicalWindow, todayStatus, calendarHeatmap,
+  }
 }
 
 function ruleBasedChallenge(stats: AccountabilityStats, overdueTitle: string | null): { title: string; description: string } {

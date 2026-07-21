@@ -7,7 +7,13 @@
 
 'use client'
 import { useEffect, useState } from 'react'
-import { Brain, TrendingUp, Target, RefreshCw, Lightbulb, ChevronRight, Zap } from 'lucide-react'
+import { Brain, TrendingUp, Target, RefreshCw, Lightbulb, ChevronRight, Zap, Clock, CalendarDays } from 'lucide-react'
+
+function formatHourLabel(h: number): string {
+  const period = h < 12 ? 'AM' : 'PM'
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `${h12} ${period}`
+}
 
 export default function InsightsPage() {
   const [roadmaps, setRoadmaps] = useState<any[]>([])
@@ -17,12 +23,16 @@ export default function InsightsPage() {
   const [suggestion, setSuggestion] = useState<any>(null)
   const [sugLoading, setSugLoading] = useState(false)
 
+  const [activity, setActivity] = useState<any>(null)
+  const [activityLoading, setActivityLoading] = useState(true)
+
   useEffect(() => {
     fetch('/api/roadmaps').then(r=>r.json()).then(d => {
       const arr = (Array.isArray(d)?d:[]).filter((r:any)=>r.status==='ACTIVE')
       setRoadmaps(arr)
       if (arr.length>0) setSelected(arr[0].id)
     })
+    fetch('/api/accountability').then(r => r.ok ? r.json() : null).then(setActivity).catch(() => setActivity(null)).finally(() => setActivityLoading(false))
   }, [])
 
   async function analyze() {
@@ -62,6 +72,56 @@ export default function InsightsPage() {
         </div>
       </div>
 
+      {!activityLoading && activity && activity.calendarHeatmap && (
+        <div className="card-feed" style={{ padding: '20px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <CalendarDays size={15} style={{ color: 'var(--accent3)' }} />
+            <span style={{ fontSize: '13px', fontWeight: '700' }}>Your Activity Timetable</span>
+          </div>
+          <p style={{ fontSize: '12px', color: 'var(--text3)', marginBottom: '16px' }}>
+            {activity.typicalWindow
+              ? <>You typically show up between <strong style={{ color: 'var(--text2)' }}>{activity.typicalWindow}</strong>.{' '}
+                  {activity.todayStatus === 'on_pattern' && "You've already checked in today — right on track."}
+                  {activity.todayStatus === 'too_early' && "Your usual window hasn't started yet today — nothing off about that."}
+                  {activity.todayStatus === 'off_pattern' && "You're past your usual window today and haven't checked in yet."}
+                </>
+              : 'Keep completing tasks — a time pattern shows up after a bit more history.'}
+          </p>
+
+          {/* Calendar heatmap — last 12 weeks */}
+          <div style={{ display: 'flex', gap: '3px', overflowX: 'auto', paddingBottom: '6px', marginBottom: '16px' }}>
+            {Array.from({ length: 12 }).map((_, week) => (
+              <div key={week} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                {Array.from({ length: 7 }).map((_, day) => {
+                  const idx = week * 7 + day
+                  const cell = activity.calendarHeatmap[idx]
+                  if (!cell) return <div key={day} style={{ width: '10px', height: '10px' }} />
+                  const intensity = cell.count === 0 ? 0 : cell.count === 1 ? 1 : cell.count <= 3 ? 2 : 3
+                  const bg = ['var(--bg4)', 'var(--accent-border)', 'var(--accent2)', 'var(--accent)'][intensity]
+                  return <div key={day} title={`${cell.date}: ${cell.count} task${cell.count===1?'':'s'}`} style={{ width: '10px', height: '10px', borderRadius: '2px', background: bg }} />
+                })}
+              </div>
+            ))}
+          </div>
+
+          {/* Hourly distribution */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+            <Clock size={12} style={{ color: 'var(--text3)' }} />
+            <span className="section-title" style={{ margin: 0 }}>By hour of day</span>
+          </div>
+          <div style={{ display: 'flex', gap: '2px', alignItems: 'flex-end', height: '36px' }}>
+            {activity.hourlyPattern.map((h: any) => {
+              const max = Math.max(...activity.hourlyPattern.map((x: any) => x.count), 1)
+              const barH = Math.max(2, Math.round((h.count / max) * 36))
+              return <div key={h.hour} title={`${formatHourLabel(h.hour)}: ${h.count}`} style={{ flex: 1, height: `${barH}px`, borderRadius: '1px', background: h.count > 0 ? 'var(--accent)' : 'var(--bg4)' }} />
+            })}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: 'var(--text4)', marginTop: '4px' }}>
+            <span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>11 PM</span>
+          </div>
+        </div>
+      )}
+
       {!data&&!loading&&(
         <div className="card-feed" style={{ padding:'48px', textAlign:'center' }}>
           <Brain size={32} style={{ color:'var(--text4)', marginBottom:'14px' }} />
@@ -94,7 +154,7 @@ export default function InsightsPage() {
             </div>
             <div className="card-feed" style={{ padding:'18px' }}>
               <div style={{ fontSize:'11px', color:'var(--text3)', marginBottom:'8px', textTransform:'uppercase', letterSpacing:'0.07em' }}>Completion</div>
-              <div style={{ fontSize:'28px', fontWeight:'800', color:'#fff' }}>{data.completionRate}%</div>
+              <div style={{ fontSize:'28px', fontWeight:'800', color:'var(--text1)' }}>{data.completionRate}%</div>
               <div style={{ fontSize:'11px', color:'var(--text3)', marginTop:'2px' }}>Max streak: {data.streakMax}d</div>
             </div>
           </div>
@@ -123,7 +183,7 @@ export default function InsightsPage() {
               {(data.nextSteps||[]).map((step:string,i:number)=>(
                 <div key={i} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', background:'var(--green-bg)', border:'1px solid var(--green-border)', borderRadius:'8px' }}>
                   <ChevronRight size={13} style={{ color:'var(--green)', flexShrink:0 }} />
-                  <span style={{ fontSize:'13px', color:'#fff' }}>{step}</span>
+                  <span style={{ fontSize:'13px', color:'var(--text1)' }}>{step}</span>
                 </div>
               ))}
             </div>

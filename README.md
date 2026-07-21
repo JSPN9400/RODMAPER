@@ -243,8 +243,8 @@ License: **MIT** (see [`LICENSE`](./LICENSE))
   this file now only exports `GET` (used by the dashboard). `lib/ai-generator.ts`
   is kept because `parseUserIntent` (→ `/api/nlu`) and
   `generateCompletionSummary` (→ reports) are still used; its unused
-  `generateRoadmapWithAI` export can be deleted too if you want to fully
-  clean it up.
+  `generateRoadmapWithAI` and `generateResumeBullets` exports were flagged
+  as safe to delete several times and have now actually been removed (§21).
 - **Removed:** `lib/report-generator.ts` (`generateReport`) was dead code —
   no API route imported it (report generation is handled entirely inline in
   `app/api/reports/route.ts`). It also imported two types
@@ -710,3 +710,50 @@ Two related complaints, one root cause each:
   require 2-3 sentence topic/milestone descriptions, specific
   (non-generic) exercises and subtopics, and 2-4 resources per
   day/phase instead of 1.
+
+---
+
+## 21. Cleanup + consistency pass
+
+- **Deleted long-flagged dead code**: `lib/ai-generator.ts`'s
+  `generateRoadmapWithAI` and `generateResumeBullets` — both unused by
+  any route, flagged as safe-to-delete across several earlier passes in
+  this log but never actually removed until now. (`generateRoadmapWithAI`
+  also had the same "ask the model for a literal URL" problem fixed in
+  §20 — moot now that it's gone.)
+- **`lib/accountability.ts`'s AI challenge generator had no Gemini
+  fallback** — every other AI call in the app (roadmap generation, the
+  mentor, NLU parsing, report summaries) tries Groq first and falls back
+  to Gemini if it's unavailable or fails; this one only tried Groq and
+  fell straight to the rule-based challenge text otherwise. Not a crash
+  (the rule-based fallback is fine on its own), but inconsistent with the
+  resilience pattern used everywhere else — added the same Groq→Gemini
+  fallback here too.
+
+---
+
+## 22. Clarifying questions before generation (fixes generic/basic roadmaps)
+
+The generic level/hours/background fields weren't enough for the model to
+produce genuinely specific content — "learn Anatomy" means something
+completely different for an MBBS 1st-year student's university exams
+than for a NEET-PG aspirant or a hobbyist, and the model had no way to
+know which. Concretely reported: an MBBS 1st-year student asked for an
+Anatomy roadmap and got generic, surface-level topics.
+
+**New flow** (`/create`, both AI paths): after filling in goal/level/
+background and hitting "Continue," the app now calls
+`generateClarifyingQuestions()` (`lib/roadmap-generator.ts`) — the model
+itself generates 3-5 sharp, domain-adaptive questions for whatever the
+student just typed (e.g. for an MBBS Anatomy goal: which body regions
+are priority, which exam this is for, which textbook they follow), shown
+as a quick form (`app/api/roadmaps/clarify/route.ts` →
+`app/create/page.tsx` step 3). The answers are passed through
+`generate`'s request body as `clarifications` and folded into the actual
+generation prompt via `buildClarificationContext()`, with an explicit
+instruction to use real, standard field-specific terminology rather than
+generic placeholders.
+
+Fails open by design: if the clarify call errors or the model returns no
+questions, generation proceeds immediately with just the original form
+fields rather than blocking the user on an enhancement that didn't work.

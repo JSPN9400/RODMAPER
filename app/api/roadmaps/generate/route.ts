@@ -15,6 +15,7 @@ import {
   detectGoalType,
   generateLongTermRoadmap,
   generateShortTermRoadmap,
+  type ClarificationAnswer,
   type CurrentLevel,
   type ExamType,
   type FocusType,
@@ -33,6 +34,7 @@ type RequestBody = {
   examType?: ExamType
   targetDate?: string
   color?: string
+  clarifications?: ClarificationAnswer[]
 }
 
 export async function POST(req: NextRequest) {
@@ -54,6 +56,7 @@ export async function POST(req: NextRequest) {
       hoursPerDay: body.hoursPerDay,
       background: body.background || '',
       focusType: body.focusType || 'mixed',
+      clarifications: body.clarifications,
     })
 
     const created = await prisma.roadmap.create({
@@ -104,6 +107,7 @@ export async function POST(req: NextRequest) {
     hoursPerDay: body.hoursPerDay,
     background: body.background || '',
     examType: body.examType,
+    clarifications: body.clarifications,
   })
 
   const totalDays = Math.max(body.duration, roadmap.phases.at(-1)?.endWeek ? roadmap.phases.at(-1)!.endWeek * 7 : body.duration)

@@ -12,6 +12,8 @@ export type CurrentLevel = 'beginner' | 'intermediate' | 'advanced'
 export type FocusType = 'practice' | 'theory' | 'mixed'
 export type ExamType = 'competitive_exam' | 'degree' | 'certification' | 'career' | 'research'
 
+export type ClarificationAnswer = { question: string; answer: string }
+
 export type ShortTermRoadmapInput = {
   goal: string
   currentLevel: CurrentLevel
@@ -19,6 +21,7 @@ export type ShortTermRoadmapInput = {
   hoursPerDay: number
   background: string
   focusType: FocusType
+  clarifications?: ClarificationAnswer[]
 }
 
 export type LongTermRoadmapInput = {
@@ -28,6 +31,7 @@ export type LongTermRoadmapInput = {
   hoursPerDay: number
   background: string
   examType?: ExamType
+  clarifications?: ClarificationAnswer[]
 }
 
 export type DailyRoadmapTask = {
@@ -194,6 +198,52 @@ export function detectGoalType(goal: string): GoalType {
   return 'short_term'
 }
 
+export type ClarifyingQuestion = {
+  question: string
+  type: 'select' | 'text'
+  options?: string[]
+  placeholder?: string
+}
+
+// Generic level/hours/background fields aren't enough to produce a
+// genuinely specific plan — "learn Anatomy" means something completely
+// different depending on whether it's MBBS 1st year university exams,
+// NEET-PG, or a hobbyist. Before generating, ask the model itself to
+// come up with 3-5 SHARP, domain-adaptive questions for whatever the
+// student just typed, then feed the answers back into the real
+// generation prompt (see buildClarificationContext below) so the plan
+// uses real subject-specific structure instead of generic filler.
+export async function generateClarifyingQuestions(goal: string, background: string): Promise<ClarifyingQuestion[]> {
+  const systemPrompt = `You are an expert academic advisor across every field — medicine, engineering, competitive exams, languages, arts, trades, everything. Given a student's stated goal, generate 3-5 SHARP, SPECIFIC clarifying questions that would let an expert in that exact field build a genuinely accurate, non-generic study plan — not generic questions like "how much time do you have" (that's already asked elsewhere).
+
+Think like a senior/expert in the student's specific field would when a junior asks for help: what would you actually need to know? Real examples of the KIND of specificity wanted (do not reuse these verbatim, adapt to the actual goal given):
+- Goal "MBBS 1st year Anatomy": ask which body regions/systems are priority (Upper Limb, Lower Limb, Thorax, Abdomen, Head & Neck, Neuroanatomy, Embryology, Histology), which exam this is for (university internals, NEET-PG later, both), which textbook they're following (BD Chaurasia, Gray's, Snell).
+- Goal "JEE Physics": ask which chapters feel weakest, whether it's JEE Main or Advanced, current mock test score range.
+- Goal "Learn guitar": ask acoustic or electric, genre focus, whether they read notation or play by ear.
+
+At least one question should have concrete multiple-choice options specific to this field (type: "select"), not a vague open text box, where the field has recognizable standard subdivisions/topics/exam-types. Use free text (type: "text") only when the answer is genuinely open-ended (e.g. "what's your current weak area").
+
+Return ONLY valid JSON, no markdown fences, this exact shape:
+{"questions":[{"question":"string","type":"select","options":["opt1","opt2","opt3"]},{"question":"string","type":"text","placeholder":"e.g. ..."}]}`
+
+  const userPrompt = `Student's goal: "${goal}"${background ? `\nBackground they already gave: "${background}"` : ''}`
+
+  try {
+    const result = await groqJSON<{ questions: ClarifyingQuestion[] }>(systemPrompt, userPrompt, 1200)
+    if (Array.isArray(result.questions) && result.questions.length > 0) return result.questions.slice(0, 5)
+  } catch (err) {
+    console.warn('[roadmap-generator] Clarifying question generation failed:', err)
+  }
+  return []
+}
+
+function buildClarificationContext(clarifications?: { question: string; answer: string }[]): string {
+  if (!clarifications || clarifications.length === 0) return ''
+  const lines = clarifications.filter((c) => c.answer && c.answer.trim()).map((c) => `- ${c.question} → ${c.answer.trim()}`)
+  if (lines.length === 0) return ''
+  return `\n\nThe student also answered these clarifying questions — use these to make the plan genuinely specific to their real situation. Use real, standard terminology/subdivisions/topics for their exact field (the way a subject-matter expert or senior in that field would structure it), not generic placeholders:\n${lines.join('\n')}`
+}
+
 export async function generateShortTermRoadmap(input: ShortTermRoadmapInput): Promise<ShortTermRoadmap> {
   const systemPrompt = `You are an expert learning coach. Create a practical, detailed day-by-day roadmap.
 CRITICAL: Every day must have HANDS-ON practice, not just reading.
@@ -209,7 +259,7 @@ Current level: ${input.currentLevel}
 Days available: ${input.daysAvailable}
 Hours per day: ${input.hoursPerDay}
 Background: ${input.background}
-Focus type: ${input.focusType}
+Focus type: ${input.focusType}${buildClarificationContext(input.clarifications)}
 
 Return exactly this JSON shape:
 {
@@ -258,7 +308,7 @@ Target date or duration: ${input.targetDate}
 Current level: ${input.currentLevel}
 Hours per day: ${input.hoursPerDay}
 Background: ${input.background}
-Exam type: ${input.examType || 'career'}
+Exam type: ${input.examType || 'career'}${buildClarificationContext(input.clarifications)}
 
 Return exactly this JSON shape:
 {

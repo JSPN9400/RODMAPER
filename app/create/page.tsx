@@ -15,6 +15,7 @@ type GoalType = 'short_term' | 'long_term' | 'manual'
 type CurrentLevel = 'beginner' | 'intermediate' | 'advanced'
 type FocusType = 'practice' | 'theory' | 'mixed'
 type ExamType = 'competitive_exam' | 'degree' | 'certification' | 'career' | 'research'
+type ClarifyingQuestion = { question: string; type: 'select' | 'text'; options?: string[]; placeholder?: string }
 
 const levelOptions: CurrentLevel[] = ['beginner', 'intermediate', 'advanced']
 const focusOptions: { value: FocusType; label: string }[] = [
@@ -41,12 +42,16 @@ const colorOptions = [
 
 export default function CreateRoadmapPage() {
   const router = useRouter()
-  const [step, setStep] = useState<1 | 2>(1)
+  const [step, setStep] = useState<1 | 2 | 3>(1)
   const [goalType, setGoalType] = useState<GoalType | null>(null)
   const [smartGoal, setSmartGoal] = useState('')
   const [smartLoading, setSmartLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const [clarifyLoading, setClarifyLoading] = useState(false)
+  const [clarifyQuestions, setClarifyQuestions] = useState<ClarifyingQuestion[]>([])
+  const [clarifyAnswers, setClarifyAnswers] = useState<Record<number, string>>({})
 
   const [shortTerm, setShortTerm] = useState({
     goal: '',
@@ -113,10 +118,46 @@ export default function CreateRoadmapPage() {
     setSmartLoading(false)
   }
 
+  async function goToClarify() {
+    const goal = goalType === 'short_term' ? shortTerm.goal : longTerm.goal
+    const background = goalType === 'short_term' ? shortTerm.background : longTerm.background
+    if (!goal.trim()) return
+
+    setClarifyLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/roadmaps/clarify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal, background }),
+      })
+      const data = await res.json()
+      const questions: ClarifyingQuestion[] = Array.isArray(data.questions) ? data.questions : []
+      if (questions.length === 0) {
+        // AI couldn't produce questions — don't block the user on an
+        // optional enhancement, just generate with what we already have.
+        generateRoadmap()
+        return
+      }
+      setClarifyQuestions(questions)
+      setClarifyAnswers({})
+      setStep(3)
+    } catch {
+      // Same reasoning — a failed clarify call shouldn't block generation.
+      generateRoadmap()
+    } finally {
+      setClarifyLoading(false)
+    }
+  }
+
   async function generateRoadmap() {
     setLoading(true)
     setError('')
     try {
+      const clarifications = clarifyQuestions
+        .map((q, i) => ({ question: q.question, answer: clarifyAnswers[i] || '' }))
+        .filter((c) => c.answer.trim())
+
       const body = goalType === 'short_term'
         ? {
             type: 'short_term',
@@ -126,6 +167,7 @@ export default function CreateRoadmapPage() {
             hoursPerDay: shortTerm.hoursPerDay,
             background: shortTerm.background,
             focusType: shortTerm.focusType,
+            clarifications,
           }
         : {
             type: 'long_term',
@@ -136,6 +178,7 @@ export default function CreateRoadmapPage() {
             background: longTerm.background,
             examType: longTerm.examType,
             targetDate: longTerm.targetDate || undefined,
+            clarifications,
           }
 
       const res = await fetch('/api/roadmaps/generate', {
@@ -247,8 +290,8 @@ export default function CreateRoadmapPage() {
             {focusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
           <textarea className="input" style={{ minHeight: '100px' }} placeholder="Background: what you already know, weak areas, constraints, school/class, etc." value={shortTerm.background} onChange={(e) => setShortTerm({ ...shortTerm, background: e.target.value })} />
-          <button className="btn btn-primary btn-lg" onClick={generateRoadmap} disabled={loading || !shortTerm.goal.trim()} style={{ justifyContent: 'center' }}>
-            {loading ? <><Loader2 size={15} className="animate-spin" /> Generating...</> : <><Sparkles size={15} /> Generate Short-Term Roadmap</>}
+          <button className="btn btn-primary btn-lg" onClick={goToClarify} disabled={clarifyLoading || loading || !shortTerm.goal.trim()} style={{ justifyContent: 'center' }}>
+            {clarifyLoading ? <><Loader2 size={15} className="animate-spin" /> Thinking of the right questions...</> : <><ChevronRight size={15} /> Continue</>}
           </button>
         </div>
       )}
@@ -272,8 +315,34 @@ export default function CreateRoadmapPage() {
             {examTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
           <textarea className="input" style={{ minHeight: '100px' }} placeholder="Background: current preparation level, degree/class, completed topics, weak areas, etc." value={longTerm.background} onChange={(e) => setLongTerm({ ...longTerm, background: e.target.value })} />
-          <button className="btn btn-primary btn-lg" onClick={generateRoadmap} disabled={loading || !longTerm.goal.trim()} style={{ justifyContent: 'center' }}>
-            {loading ? <><Loader2 size={15} className="animate-spin" /> Generating...</> : <><Sparkles size={15} /> Generate Long-Term Roadmap</>}
+          <button className="btn btn-primary btn-lg" onClick={goToClarify} disabled={clarifyLoading || loading || !longTerm.goal.trim()} style={{ justifyContent: 'center' }}>
+            {clarifyLoading ? <><Loader2 size={15} className="animate-spin" /> Thinking of the right questions...</> : <><ChevronRight size={15} /> Continue</>}
+          </button>
+        </div>
+      )}
+
+      {step === 3 && (
+        <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '14px', padding: '22px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <button onClick={() => setStep(2)} style={{ background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--text3)' }}>← Back</button>
+          <div>
+            <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '4px' }}>A few quick questions</div>
+            <p style={{ fontSize: '12px', color: 'var(--text3)', margin: 0 }}>Answering these helps the plan use real, specific content for your exact situation instead of generic advice. Skip any that don't apply.</p>
+          </div>
+          {clarifyQuestions.map((q, i) => (
+            <div key={i}>
+              <label className="label">{q.question}</label>
+              {q.type === 'select' && q.options ? (
+                <select className="input" value={clarifyAnswers[i] || ''} onChange={(e) => setClarifyAnswers({ ...clarifyAnswers, [i]: e.target.value })}>
+                  <option value="">Skip this one</option>
+                  {q.options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+              ) : (
+                <input className="input" placeholder={q.placeholder || 'Your answer (optional)'} value={clarifyAnswers[i] || ''} onChange={(e) => setClarifyAnswers({ ...clarifyAnswers, [i]: e.target.value })} />
+              )}
+            </div>
+          ))}
+          <button className="btn btn-primary btn-lg" onClick={generateRoadmap} disabled={loading} style={{ justifyContent: 'center' }}>
+            {loading ? <><Loader2 size={15} className="animate-spin" /> Generating your roadmap...</> : <><Sparkles size={15} /> Generate My Roadmap</>}
           </button>
         </div>
       )}

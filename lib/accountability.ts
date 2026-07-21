@@ -122,12 +122,31 @@ function ruleBasedChallenge(stats: AccountabilityStats, overdueTitle: string | n
   }
 }
 
+async function geminiChallenge(prompt: string): Promise<{ title: string; description: string } | null> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return null
+  try {
+    const { GoogleGenAI } = require('@google/genai')
+    const ai = new GoogleGenAI({ apiKey, httpOptions: { headers: { 'User-Agent': 'aistudio-build' } } })
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.5-flash',
+      contents: prompt,
+      config: { temperature: 0.9 },
+    })
+    const text = (response.text || '').replace(/```json|```/g, '').trim()
+    return JSON.parse(text)
+  } catch (err) {
+    console.warn('[accountability] Gemini challenge generation also failed, using rule-based fallback:', err)
+    return null
+  }
+}
+
 async function aiChallenge(stats: AccountabilityStats, overdueTitle: string | null): Promise<{ title: string; description: string } | null> {
   const hasGroq = process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim() !== ''
   const prompt = `A student using a learning-roadmap app has fallen behind pace (reliability score ${stats.reliabilityScore}/100, ${stats.tasksOverdue} tasks overdue${overdueTitle ? `, most pressing: "${overdueTitle}"` : ''}). Write ONE small, achievable "recovery challenge" to nudge them back on track today. Tone: warm, encouraging, zero shame or guilt-tripping — like a good friend, not a scold. Return ONLY JSON, no markdown: {"title":"short punchy title, under 8 words","description":"1-2 encouraging sentences, specific and doable today"}`
 
-  try {
-    if (hasGroq) {
+  if (hasGroq) {
+    try {
       const client = new Groq({ apiKey: process.env.GROQ_API_KEY! })
       const res = await client.chat.completions.create({
         model: 'llama-3.3-70b-versatile',
@@ -137,11 +156,12 @@ async function aiChallenge(stats: AccountabilityStats, overdueTitle: string | nu
       })
       const text = (res.choices[0]?.message?.content || '').replace(/```json|```/g, '').trim()
       return JSON.parse(text)
+    } catch (err) {
+      console.warn('[accountability] Groq challenge generation failed, trying Gemini:', err)
+      return geminiChallenge(prompt)
     }
-  } catch (err) {
-    console.warn('[accountability] AI challenge generation failed, using rule-based fallback:', err)
   }
-  return null
+  return geminiChallenge(prompt)
 }
 
 // Returns the user's current active (incomplete) challenge, generating a

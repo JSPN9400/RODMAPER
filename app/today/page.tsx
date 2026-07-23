@@ -60,7 +60,7 @@ export default function TodayPage() {
     <div style={{ padding: '18px 16px 28px', maxWidth: '640px', margin: '0 auto', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
         <div>
-          <div style={{ fontSize: '22px', fontWeight: '800', marginBottom: '4px' }}>Today</div>
+          <div className="font-display" style={{ fontSize: '22px', fontWeight: '800', marginBottom: '4px' }}>Today</div>
           <div style={{ fontSize: '13px', color: 'var(--text2)' }}>{items.length} tasks queued</div>
         </div>
         <Link href="/dashboard" className="btn btn-ghost">Dashboard</Link>

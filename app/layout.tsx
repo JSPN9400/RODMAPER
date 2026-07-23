@@ -12,6 +12,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import Sidebar from '@/components/ui/Sidebar'
 import SessionProvider from '@/components/ui/SessionProvider'
+import PageTransition from '@/components/ui/PageTransition'
 
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -62,11 +63,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 flex: 1, marginLeft: '220px',
                 minHeight: '100vh', background: 'var(--bg)'
               }}>
-                {children}
+                <PageTransition>{children}</PageTransition>
               </main>
             </div>
           ) : (
-            <main>{children}</main>
+            <main>
+              <PageTransition>{children}</PageTransition>
+            </main>
           )}
         </SessionProvider>
       </body>

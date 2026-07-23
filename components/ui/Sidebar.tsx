@@ -44,6 +44,7 @@ export default function Sidebar({ user }: { user: any }) {
       <aside className="desktop-only" style={{
         position: 'fixed', left: 0, top: 0, height: '100vh', width: '220px',
         background: 'rgba(20,18,15,0.95)', borderRight: '1px solid var(--border)',
+        boxShadow: '4px 0 24px -8px rgba(0,0,0,0.35)',
         flexDirection: 'column', zIndex: 40, backdropFilter: 'blur(20px)'
       }}>
         {/* Logo */}
@@ -73,7 +74,7 @@ export default function Sidebar({ user }: { user: any }) {
                 fontSize: '13px', fontWeight: active ? '600' : '400',
                 color: active ? 'var(--text1)' : 'var(--text3)',
                 background: active ? 'rgba(200,138,61,0.13)' : 'transparent',
-                textDecoration: 'none', transition: 'all 0.12s',
+                textDecoration: 'none', transition: 'background 0.25s cubic-bezier(0.16,1,0.3,1), border-color 0.25s cubic-bezier(0.16,1,0.3,1), color 0.2s ease',
                 border: active ? '1px solid var(--accent-border)' : '1px solid transparent'
               }}>
                 <span className={`route-dot ${active ? 'done' : ''}`} />

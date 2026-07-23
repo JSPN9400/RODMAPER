@@ -785,3 +785,51 @@ schedule right now," not just "was I active this week."
   not tied to a single roadmap) showing the heatmap, the hourly bar
   chart, and a plain-language status line, before the existing
   per-roadmap AI analysis section.
+
+---
+
+## 24. Premium UI/UX pass — animations, depth, navigation
+
+Feedback: the app felt flat and templated — no motion between pages, cards
+with no depth, and a plain sidebar/bottom nav on both desktop and mobile.
+Addressed the highest-impact pieces:
+
+- **Page transitions** (`components/ui/PageTransition.tsx`) — every route
+  change now does a smooth fade + slight rise instead of an instant hard
+  cut. Implemented with zero dependencies: the wrapper is keyed by
+  `usePathname()`, so React remounts the subtree on navigation, which
+  retriggers a plain CSS `@keyframes` animation
+  (`.page-enter` in `globals.css`, `cubic-bezier(0.16,1,0.3,1)` — a
+  gentle deceleration curve, not a linear snap). Respects
+  `prefers-reduced-motion`.
+- **Real depth on cards.** `.card-feed` went from a flat single-color
+  background with a 1px border to a subtle vertical gradient + layered
+  shadow (`box-shadow` with two layers, tight + broad) and a hover lift
+  (`translateY(-1px)`), with matching values for the light theme. Buttons
+  and inputs got the same easing curve for their hover/focus transitions
+  instead of a generic `transition: all 0.18s`.
+- **Sidebar redesign.** Desktop: added a directional drop shadow off the
+  right edge instead of just a flat border, and switched nav-item hover/
+  active transitions to the same premium easing. Mobile: the bottom nav
+  is no longer a flush-edge bar — it's now a floating glass "dock" (12px
+  side margins, rounded corners, blur+saturate backdrop filter, its own
+  drop shadow), closer to an iOS floating tab bar than a generic web app
+  footer nav. `page-shell`'s mobile bottom padding was increased to match
+  so content doesn't sit underneath it.
+- **Settings "API Keys" card redesign** — the specific card flagged as
+  looking basic. Rebuilt with an icon in a soft accent-colored badge (the
+  pattern used elsewhere in the app), a title+subtitle header instead of
+  a bare label, and the `.env.local` block restyled as a small code
+  window (macOS-style traffic-light dots in the header bar, actual
+  syntax-color separation between key/`=`/value, the app's real
+  monospace font instead of the browser default `monospace`).
+- **Display font coverage check** — most page titles already use real
+  `<h1>`/`<h2>` tags, which the global `h1, h2, h3 { font-family:
+  var(--font-display) }` rule already covers automatically; only one
+  page (`/today`) had its title on a plain `<div>` instead, missed by
+  that rule — fixed.
+
+**Not done in this pass** (would need more time/a different tool):
+a full onboarding-tour animation sequence, per-component micro-interaction
+audit beyond buttons/inputs/cards, and a genuine icon set redesign (still
+using stock `lucide-react` icons throughout).

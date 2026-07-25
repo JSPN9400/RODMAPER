@@ -12,8 +12,8 @@ import Link from 'next/link'
 import { Trophy, Zap, Target, Share2, Brain, ArrowRight, TrendingUp } from 'lucide-react'
 
 const BAR: Record<string,string> = {
-  violet:'#C88A3D',blue:'#6480A2',green:'#5B8A72',
-  amber:'#C9A227',red:'#BB6453',teal:'#4C8C89',pink:'#B6708C'
+  violet:'#4F6BFF',blue:'#0A9EFF',green:'#30D158',
+  amber:'#FF9F0A',red:'#FF453A',teal:'#40C8E0',pink:'#FF375F'
 }
 
 export default function ReportsContent() {
@@ -118,7 +118,7 @@ export default function ReportsContent() {
             <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
               {(report.projectsData||[]).map((p:any) => {
                 const pct = p.total > 0 ? Math.round(p.completed/p.total*100) : 0
-                const bar = BAR[p.color] || '#C88A3D'
+                const bar = BAR[p.color] || '#4F6BFF'
                 return (
                   <div key={p.name}>
                     <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'5px' }}>
@@ -148,7 +148,7 @@ export default function ReportsContent() {
 
           {/* AI Summary */}
           {report.summary && (
-            <div className="card-feed" style={{ padding:'20px', borderColor:'var(--accent-border)', background:'rgba(200,138,61,0.04)' }}>
+            <div className="card-feed" style={{ padding:'20px', borderColor:'var(--accent-border)', background:'rgba(79,107,255,0.04)' }}>
               <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'10px' }}>
                 <Brain size={15} style={{ color:'var(--accent3)' }} />
                 <span style={{ fontSize:'13px', fontWeight:'700', color:'var(--accent3)' }}>AI Analysis</span>

@@ -18,7 +18,7 @@ const PREP_CATEGORIES = [
     icon: Laptop,
     badge: 'Trending',
     tagline: 'Go from hello-world to deployable system architectures.',
-    color: '#C88A3D',
+    color: '#4F6BFF',
     sampleGoal: 'Become a Fullstack Next.js & NestJS Developer in 45 Days',
     days: [
       { num: 'Day 1', title: 'React Server Components & Next.js App Router', desc: 'Understand Server vs Client components, folder-based routing, and layout compositions.', tech: ['React', 'Next.js'] },
@@ -32,7 +32,7 @@ const PREP_CATEGORIES = [
     icon: GraduationCap,
     badge: 'Academics',
     tagline: 'Master exhaustive syllabi with high-yield revision calendars.',
-    color: '#6480A2',
+    color: '#0A9EFF',
     sampleGoal: 'Succeed in GATE Computer Science — Theory of Computation & DS',
     days: [
       { num: 'Day 1', title: 'Theory of Computation: Finite Automata & DFA Minimization', desc: 'Solve equivalence proofs, construct state-transition tables, and practice high-yield GATE questions.', tech: ['ToC', 'Math'] },
@@ -46,7 +46,7 @@ const PREP_CATEGORIES = [
     icon: Award,
     badge: 'Enterprise',
     tagline: 'Pass official cloud and infrastructure validation tracks with ease.',
-    color: '#4C8C89',
+    color: '#40C8E0',
     sampleGoal: 'AWS Certified Solutions Architect — Prep & Mock Simulator',
     days: [
       { num: 'Day 1', title: 'AWS Identity (IAM) & Custom VPC Networking', desc: 'Design secure multi-tier subnets, internet gateways, route tables, and NACL rules.', tech: ['AWS VPC', 'IAM'] },
@@ -60,7 +60,7 @@ const PREP_CATEGORIES = [
     icon: Brain,
     badge: 'High Value',
     tagline: 'Speak and solve like a principal engineer under high pressure.',
-    color: '#C9A227',
+    color: '#FF9F0A',
     sampleGoal: 'FAANG System Design Prep — Scaling to 10M+ Users',
     days: [
       { num: 'Day 1', title: 'High Availability: Load Balancers & Consistent Hashing', desc: 'Distribute requests, write custom ring hashing logic, and mitigate hot spots.', tech: ['Load Balancing', 'Hashing'] },
@@ -93,36 +93,36 @@ export default function LandingPage() {
   const IconComponent = currentCat.icon
 
   return (
-    <div style={{ background: '#14120F', color: '#F4EEE2', overflowX: 'hidden' }}>
+    <div style={{ background: '#000000', color: '#F5F5F7', overflowX: 'hidden' }}>
       
       {/* Hero Section */}
       <section style={{ minHeight: '92vh', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '100px 24px 60px', position: 'relative' }}>
-        <div style={{ position: 'absolute', top: '25%', left: '50%', transform: 'translate(-50%,-50%)', width: '800px', height: '400px', borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(200,138,61,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: '25%', left: '50%', transform: 'translate(-50%,-50%)', width: '800px', height: '400px', borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(79,107,255,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
         
         <div style={{ position: 'relative', maxWidth: '840px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '999px', marginBottom: '24px', background: 'rgba(200,138,61,0.08)', border: '1px solid rgba(200,138,61,0.2)', fontSize: '12px', color: '#E8C084', fontWeight: '500' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '999px', marginBottom: '24px', background: 'rgba(79,107,255,0.08)', border: '1px solid rgba(79,107,255,0.2)', fontSize: '12px', color: '#93A5FF', fontWeight: '500' }}>
             <Sparkles size={12} className="animate-pulse" />
             Empowering students, developers, and competitive exam aspirants worldwide
           </div>
 
           <h1 style={{ fontSize: 'clamp(36px, 6.5vw, 72px)', fontWeight: '850', letterSpacing: '-2.5px', lineHeight: '1.05', marginBottom: '20px', color: '#fff' }}>
             Learn anything with<br />
-            <span style={{ background: 'linear-gradient(135deg, #C88A3D, #E8C084, #8FADD1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Adaptive AI Roadmaps</span>
+            <span style={{ background: 'linear-gradient(135deg, #4F6BFF, #93A5FF, #6BC2FF)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Adaptive AI Roadmaps</span>
           </h1>
 
-          <p style={{ fontSize: '18px', color: 'rgba(244,238,226,0.45)', marginBottom: '36px', lineHeight: '1.65', maxWidth: '580px', margin: '0 auto 36px' }}>
+          <p style={{ fontSize: '18px', color: 'rgba(245,245,247,0.45)', marginBottom: '36px', lineHeight: '1.65', maxWidth: '580px', margin: '0 auto 36px' }}>
             Create structured, customized, day-by-day prep checklists manually or with advanced AI. Complete with resources, tech stack chips, and detailed milestones.
           </p>
 
           <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 32px', background: '#C88A3D', color: '#fff', borderRadius: '12px', textDecoration: 'none', fontSize: '15px', fontWeight: '700', transition: 'all 0.15s', boxShadow: '0 8px 32px rgba(200,138,61,0.35)' }}>
+            <Link href="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 32px', background: '#4F6BFF', color: '#fff', borderRadius: '12px', textDecoration: 'none', fontSize: '15px', fontWeight: '700', transition: 'all 0.15s', boxShadow: '0 8px 32px rgba(79,107,255,0.35)' }}>
               ✦ Start for free
             </Link>
-            <Link href="/pricing" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 30px', background: 'rgba(244,238,226,0.03)', border: '1px solid rgba(244,238,226,0.08)', color: '#fff', borderRadius: '12px', textDecoration: 'none', fontSize: '15px', fontWeight: '500', transition: 'all 0.15s' }}>
+            <Link href="/pricing" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 30px', background: 'rgba(245,245,247,0.03)', border: '1px solid rgba(245,245,247,0.08)', color: '#fff', borderRadius: '12px', textDecoration: 'none', fontSize: '15px', fontWeight: '500', transition: 'all 0.15s' }}>
               View pricing details <ArrowRight size={14} />
             </Link>
           </div>
-          <p style={{ fontSize: '12px', color: 'rgba(244,238,226,0.25)', marginTop: '16px' }}>No credit card required · Seamless AI & manual tools out-of-the-box</p>
+          <p style={{ fontSize: '12px', color: 'rgba(245,245,247,0.25)', marginTop: '16px' }}>No credit card required · Seamless AI & manual tools out-of-the-box</p>
         </div>
       </section>
 
@@ -141,9 +141,9 @@ export default function LandingPage() {
       {/* Interactive Prep Showcase: "Prep for Anything" */}
       <section style={{ padding: '60px 24px 80px', maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-          <div style={{ fontSize: '11px', fontWeight: '600', color: '#C88A3D', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>PREPARE FOR ANYTHING</div>
+          <div style={{ fontSize: '11px', fontWeight: '600', color: '#4F6BFF', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>PREPARE FOR ANYTHING</div>
           <h2 style={{ fontSize: 'clamp(26px,3.5vw,42px)', fontWeight: '800', letterSpacing: '-1.5px', color: '#fff', marginBottom: '14px' }}>What are you studying next?</h2>
-          <p style={{ fontSize: '15px', color: 'rgba(244,238,226,0.4)', maxWidth: '500px', margin: '0 auto' }}>Select an education category to preview how RoadMaper constructs custom, day-by-day learning pathways.</p>
+          <p style={{ fontSize: '15px', color: 'rgba(245,245,247,0.4)', maxWidth: '500px', margin: '0 auto' }}>Select an education category to preview how RoadMaper constructs custom, day-by-day learning pathways.</p>
         </div>
 
         {/* Category Switcher Tabs */}
@@ -160,8 +160,8 @@ export default function LandingPage() {
                   alignItems: 'center',
                   gap: '12px',
                   padding: '16px 20px',
-                  background: isActive ? 'rgba(244,238,226,0.03)' : 'transparent',
-                  border: `1px solid ${isActive ? 'rgba(200,138,61,0.35)' : 'rgba(244,238,226,0.04)'}`,
+                  background: isActive ? 'rgba(245,245,247,0.03)' : 'transparent',
+                  border: `1px solid ${isActive ? 'rgba(79,107,255,0.35)' : 'rgba(245,245,247,0.04)'}`,
                   borderRadius: '12px',
                   cursor: 'pointer',
                   textAlign: 'left',
@@ -172,17 +172,17 @@ export default function LandingPage() {
                   width: '36px',
                   height: '36px',
                   borderRadius: '8px',
-                  background: isActive ? 'rgba(200,138,61,0.15)' : 'rgba(244,238,226,0.03)',
+                  background: isActive ? 'rgba(79,107,255,0.15)' : 'rgba(245,245,247,0.03)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: isActive ? '#E8C084' : 'rgba(244,238,226,0.4)'
+                  color: isActive ? '#93A5FF' : 'rgba(245,245,247,0.4)'
                 }}>
                   <CatIcon size={18} />
                 </div>
                 <div>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: isActive ? '#fff' : 'rgba(244,238,226,0.6)' }}>{cat.title}</div>
-                  <span style={{ fontSize: '10px', color: 'rgba(244,238,226,0.3)', textTransform: 'uppercase', fontWeight: '600' }}>{cat.badge}</span>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: isActive ? '#fff' : 'rgba(245,245,247,0.6)' }}>{cat.title}</div>
+                  <span style={{ fontSize: '10px', color: 'rgba(245,245,247,0.3)', textTransform: 'uppercase', fontWeight: '600' }}>{cat.badge}</span>
                 </div>
               </button>
             )
@@ -193,9 +193,9 @@ export default function LandingPage() {
         <div className="p-4 sm:p-7 bg-white/[0.01] border border-white/[0.06] rounded-2xl">
           <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-white/[0.06] pb-5 mb-6">
             <div>
-              <span style={{ fontSize: '11px', color: '#E8C084', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Interactive Preview</span>
+              <span style={{ fontSize: '11px', color: '#93A5FF', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Interactive Preview</span>
               <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#fff', marginTop: '4px' }}>{currentCat.sampleGoal}</h3>
-              <p style={{ fontSize: '13px', color: 'rgba(244,238,226,0.4)', marginTop: '4px' }}>{currentCat.tagline}</p>
+              <p style={{ fontSize: '13px', color: 'rgba(245,245,247,0.4)', marginTop: '4px' }}>{currentCat.tagline}</p>
             </div>
             <Link href="/login" className="self-start sm:self-auto text-xs sm:text-sm font-semibold text-white no-underline cta-brass px-4 py-2.5 rounded-lg flex items-center gap-2 transition shrink-0 whitespace-nowrap">
               Generate Custom Plan <Sparkles size={12} />
@@ -215,31 +215,31 @@ export default function LandingPage() {
                       width: '52px',
                       height: '52px',
                       borderRadius: '10px',
-                      background: 'rgba(244,238,226,0.03)',
+                      background: 'rgba(245,245,247,0.03)',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      border: '1px solid rgba(244,238,226,0.04)',
+                      border: '1px solid rgba(245,245,247,0.04)',
                       flexShrink: 0,
                     }}
                   >
-                    <span style={{ fontSize: '9px', color: 'rgba(244,238,226,0.4)', fontWeight: '500' }}>DAY</span>
+                    <span style={{ fontSize: '9px', color: 'rgba(245,245,247,0.4)', fontWeight: '500' }}>DAY</span>
                     <span style={{ fontSize: '16px', color: '#fff', fontWeight: '850', letterSpacing: '-0.5px', lineHeight: '1' }}>{i + 1}</span>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
                       {day.tech.map(t => (
-                        <span key={t} style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(200,138,61,0.1)', color: '#E8C084', border: '1px solid rgba(200,138,61,0.2)', borderRadius: '4px', fontWeight: '600' }}>{t}</span>
+                        <span key={t} style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(79,107,255,0.1)', color: '#93A5FF', border: '1px solid rgba(79,107,255,0.2)', borderRadius: '4px', fontWeight: '600' }}>{t}</span>
                       ))}
                     </div>
                     <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#fff' }}>{day.title}</h4>
-                    <p style={{ fontSize: '13px', color: 'rgba(244,238,226,0.4)', marginTop: '4px', lineHeight: '1.4' }}>{day.desc}</p>
+                    <p style={{ fontSize: '13px', color: 'rgba(245,245,247,0.4)', marginTop: '4px', lineHeight: '1.4' }}>{day.desc}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 text-[11px] md:text-xs text-white/30 self-start md:self-auto pl-[68px] md:pl-0">
                   <span>Verified Resources Included</span>
-                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#5B8A72' }} />
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#30D158' }} />
                 </div>
               </div>
             ))}
@@ -248,27 +248,27 @@ export default function LandingPage() {
       </section>
 
       {/* Features Grid */}
-      <section id="features" style={{ padding: '60px 24px 80px', maxWidth: '1100px', margin: '0 auto', borderTop: '1px solid rgba(244,238,226,0.04)' }}>
+      <section id="features" style={{ padding: '60px 24px 80px', maxWidth: '1100px', margin: '0 auto', borderTop: '1px solid rgba(245,245,247,0.04)' }}>
         <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-          <div style={{ fontSize: '11px', fontWeight: '600', color: '#C88A3D', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>COMPLETE ENGINE</div>
+          <div style={{ fontSize: '11px', fontWeight: '600', color: '#4F6BFF', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>COMPLETE ENGINE</div>
           <h2 style={{ fontSize: 'clamp(26px,3vw,40px)', fontWeight: '800', letterSpacing: '-1px', color: '#fff', marginBottom: '12px' }}>Why learn with RoadMaper?</h2>
-          <p style={{ fontSize: '15px', color: 'rgba(244,238,226,0.35)', maxWidth: '440px', margin: '0 auto' }}>Designed to give you absolute control and structure, from day one.</p>
+          <p style={{ fontSize: '15px', color: 'rgba(245,245,247,0.35)', maxWidth: '440px', margin: '0 auto' }}>Designed to give you absolute control and structure, from day one.</p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '14px' }}>
           {FEATURES.map((f, i) => (
-            <div key={i} style={{ padding: '28px', borderRadius: '14px', background: 'rgba(244,238,226,0.01)', border: '1px solid rgba(244,238,226,0.05)', transition: 'all 0.2s' }}>
-              <div style={{ fontSize: '24px', marginBottom: '14px', color: '#E8C084' }}>{f.icon}</div>
+            <div key={i} style={{ padding: '28px', borderRadius: '14px', background: 'rgba(245,245,247,0.01)', border: '1px solid rgba(245,245,247,0.05)', transition: 'all 0.2s' }}>
+              <div style={{ fontSize: '24px', marginBottom: '14px', color: '#93A5FF' }}>{f.icon}</div>
               <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#fff', marginBottom: '8px' }}>{f.title}</h3>
-              <p style={{ fontSize: '13px', color: 'rgba(244,238,226,0.4)', lineHeight: '1.6', margin: 0 }}>{f.desc}</p>
+              <p style={{ fontSize: '13px', color: 'rgba(245,245,247,0.4)', lineHeight: '1.6', margin: 0 }}>{f.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* How It Works Flow */}
-      <section style={{ padding: '60px 24px 80px', background: 'rgba(244,238,226,0.01)', borderTop: '1px solid rgba(244,238,226,0.04)', borderBottom: '1px solid rgba(244,238,226,0.04)' }}>
+      <section style={{ padding: '60px 24px 80px', background: 'rgba(245,245,247,0.01)', borderTop: '1px solid rgba(245,245,247,0.04)', borderBottom: '1px solid rgba(245,245,247,0.04)' }}>
         <div style={{ maxWidth: '820px', margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ fontSize: '11px', fontWeight: '600', color: '#C88A3D', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>WORKFLOW</div>
+          <div style={{ fontSize: '11px', fontWeight: '600', color: '#4F6BFF', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>WORKFLOW</div>
           <h2 style={{ fontSize: 'clamp(24px,3vw,36px)', fontWeight: '800', letterSpacing: '-1px', marginBottom: '40px' }}>Simple as 1, 2, 3</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '28px', textAlign: 'left' }}>
             {[
@@ -276,10 +276,10 @@ export default function LandingPage() {
               { step: '02', title: 'Personalize & Shift Days', desc: 'Drag, drop, add tasks, customize colors, modify tech tags, and link directly to your study resources.' },
               { step: '03', title: 'Track Daily Milestones', desc: 'Check off complete days. Study with smart reminders, track completion metrics, and export reports.' },
             ].map(({ step, title, desc }) => (
-              <div key={step} style={{ background: 'rgba(244,238,226,0.01)', border: '1px solid rgba(244,238,226,0.03)', padding: '24px', borderRadius: '12px' }}>
-                <div style={{ fontSize: '12px', fontWeight: '800', color: '#E8C084', marginBottom: '12px', letterSpacing: '0.1em' }}>{step}</div>
+              <div key={step} style={{ background: 'rgba(245,245,247,0.01)', border: '1px solid rgba(245,245,247,0.03)', padding: '24px', borderRadius: '12px' }}>
+                <div style={{ fontSize: '12px', fontWeight: '800', color: '#93A5FF', marginBottom: '12px', letterSpacing: '0.1em' }}>{step}</div>
                 <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#fff', marginBottom: '8px' }}>{title}</h3>
-                <p style={{ fontSize: '13px', color: 'rgba(244,238,226,0.4)', lineHeight: '1.6', margin: 0 }}>{desc}</p>
+                <p style={{ fontSize: '13px', color: 'rgba(245,245,247,0.4)', lineHeight: '1.6', margin: 0 }}>{desc}</p>
               </div>
             ))}
           </div>
@@ -290,8 +290,8 @@ export default function LandingPage() {
       <section style={{ padding: '80px 24px 100px', textAlign: 'center' }}>
         <div style={{ maxWidth: '540px', margin: '0 auto' }}>
           <h2 style={{ fontSize: 'clamp(26px,4vw,42px)', fontWeight: '800', letterSpacing: '-1.5px', marginBottom: '14px' }}>Build your education pathway now</h2>
-          <p style={{ fontSize: '15px', color: 'rgba(244,238,226,0.35)', marginBottom: '28px' }}>Join thousands of students and self-learners structure their success.</p>
-          <Link href="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '15px 36px', background: '#C88A3D', color: '#fff', borderRadius: '12px', textDecoration: 'none', fontSize: '16px', fontWeight: '700', boxShadow: '0 8px 36px rgba(200,138,61,0.4)' }}>
+          <p style={{ fontSize: '15px', color: 'rgba(245,245,247,0.35)', marginBottom: '28px' }}>Join thousands of students and self-learners structure their success.</p>
+          <Link href="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '15px 36px', background: '#4F6BFF', color: '#fff', borderRadius: '12px', textDecoration: 'none', fontSize: '16px', fontWeight: '700', boxShadow: '0 8px 36px rgba(79,107,255,0.4)' }}>
             ✦ Get started free
           </Link>
         </div>

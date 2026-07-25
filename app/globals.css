@@ -4,9 +4,11 @@
  * @author JSPN
  * @license MIT — see LICENSE file in the project root.
  *
- * Design system: "Field Journal" — warm ink and brass, built around the
- * idea of a hand-annotated trail map rather than a generic dark-mode SaaS
- * dashboard. See README §15 for the full rationale.
+ * Design system: "Command Center" — Apple HIG inspired (clarity, depth via
+ * translucency, deference to content), NOT a literal Apple clone. Vivid
+ * multi-hue category colors on true near-black, glass cards via real
+ * backdrop-filter blur instead of hard borders, Manrope for display type.
+ * See README for the full rationale.
  */
 
 @tailwind base;
@@ -14,115 +16,114 @@
 @tailwind utilities;
 
 :root {
-  /* Ink — warm charcoal, not blue-black or pure black */
-  --bg: #14120F;
-  --bg2: #1C1915;
-  --bg3: #241F18;
-  --bg4: #2D271E;
-  --bg5: #372F23;
+  /* Ink — true near-black, not warm/blue-tinted */
+  --bg: #000000;
+  --bg2: rgba(28,28,30,0.68);
+  --bg2-solid: #1C1C1E;
+  --bg3: #1C1C1E;
+  --bg4: #2C2C2E;
+  --bg5: #3A3A3C;
 
-  --border: rgba(244,238,226,0.08);
-  --border2: rgba(244,238,226,0.13);
-  --border3: rgba(244,238,226,0.20);
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.12);
+  --border3: rgba(255,255,255,0.18);
 
-  /* Parchment text, not pure white */
-  --text1: #F4EEE2;
-  --text2: #B4A996;
-  --text3: #867D6F;
-  --text4: #453F35;
+  --text1: #F5F5F7;
+  --text2: #A1A1A6;
+  --text3: #75757A;
+  --text4: #48484A;
 
-  /* Brass — the route/waypoint color. Primary accent. */
-  --accent: #C88A3D;
-  --accent2: #DDA860;
-  --accent3: #E8C084;
-  --accent-bg: rgba(200,138,61,0.12);
-  --accent-border: rgba(200,138,61,0.30);
+  /* Cobalt — primary brand accent */
+  --accent: #4F6BFF;
+  --accent2: #6E86FF;
+  --accent3: #93A5FF;
+  --accent-bg: rgba(79,107,255,0.14);
+  --accent-border: rgba(79,107,255,0.32);
 
-  --grad: linear-gradient(135deg, #C88A3D 0%, #BB6453 100%);
-  --grad-warm: linear-gradient(135deg, #DDA860 0%, #C9A227 100%);
-  --grad-cool: linear-gradient(135deg, #5B8A72 0%, #4C8C89 100%);
-  --grad-green: linear-gradient(135deg, #5B8A72 0%, #7BAF8F 100%);
+  --grad: linear-gradient(135deg, #4F6BFF 0%, #7B5CFF 100%);
+  --grad-warm: linear-gradient(135deg, #FF9F0A 0%, #FF453A 100%);
+  --grad-cool: linear-gradient(135deg, #0A9EFF 0%, #40C8E0 100%);
+  --grad-green: linear-gradient(135deg, #30D158 0%, #40C8E0 100%);
 
-  /* Pine (success), Rust (danger), Ochre (warning), Slate (info) —
-     muted, warm-family status colors instead of neon semantic defaults */
-  --green: #5B8A72;
-  --green-bg: rgba(91,138,114,0.12);
-  --green-border: rgba(91,138,114,0.26);
-  --amber: #C9A227;
-  --amber-bg: rgba(201,162,39,0.12);
-  --red: #BB6453;
-  --red-bg: rgba(187,100,83,0.12);
-  --blue: #6480A2;
+  /* Vivid, high-saturation category colors — the signature system. Each
+     roadmap/nav-item/section gets one, applied via icon badges (see
+     .icon-tile below), the way iOS Settings assigns a color per category. */
+  --cat-cobalt: #4F6BFF;
+  --cat-sky: #0A9EFF;
+  --cat-mint: #30D158;
+  --cat-amber: #FF9F0A;
+  --cat-red: #FF453A;
+  --cat-teal: #40C8E0;
+  --cat-pink: #FF375F;
 
-  --r-sm: 8px;
-  --r: 12px;
-  --r-lg: 18px;
-  --r-xl: 24px;
+  --green: #30D158;
+  --green-bg: rgba(48,209,88,0.14);
+  --green-border: rgba(48,209,88,0.3);
+  --amber: #FF9F0A;
+  --amber-bg: rgba(255,159,10,0.14);
+  --red: #FF453A;
+  --red-bg: rgba(255,69,58,0.14);
+  --blue: #0A9EFF;
+
+  --r-sm: 10px;
+  --r: 14px;
+  --r-lg: 20px;
+  --r-xl: 26px;
   --r-full: 999px;
 
   --font-body: var(--font-plex-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-display: var(--font-fraunces), Georgia, 'Times New Roman', serif;
+  --font-display: var(--font-manrope), -apple-system, 'SF Pro Rounded', sans-serif;
   --font-mono: var(--font-plex-mono), 'SF Mono', Menlo, monospace;
 }
 
-/* Light theme — "Field Journal, daylight". Same identity (parchment,
-   brass, pine/rust/ochre/slate), inverted luminance. Applied via
-   [data-theme="light"] on <html>; see lib/theme-client.ts. Every color
-   below was contrast-checked against WCAG AA at 4.5:1 — several are
-   deliberately darker than a naive light-mode swap would use for exactly
-   that reason (e.g. the accent is #975C25 here, not #C88A3D, because the
-   dark-mode brass fails AA on a light parchment background). */
+/* Light theme — Apple's exact "systemGroupedBackground" logic: light gray
+   canvas, pure white cards, near-black text. Category colors darkened
+   just enough to clear WCAG AA on the lighter background (verified, not
+   guessed — see README). */
 [data-theme="light"] {
-  --bg: #F4EEE2;
-  --bg2: #EDE6D6;
-  --bg3: #E4DBC7;
-  --bg4: #D9CDB3;
-  --bg5: #CDBFA0;
+  --bg: #F5F5F7;
+  --bg2: rgba(255,255,255,0.75);
+  --bg2-solid: #FFFFFF;
+  --bg3: #FFFFFF;
+  --bg4: #EAEAEC;
+  --bg5: #DEDEE1;
 
-  --border: rgba(33,28,20,0.10);
-  --border2: rgba(33,28,20,0.16);
-  --border3: rgba(33,28,20,0.24);
+  --border: rgba(0,0,0,0.06);
+  --border2: rgba(0,0,0,0.1);
+  --border3: rgba(0,0,0,0.16);
 
-  --text1: #211C14;
-  --text2: #4A4234;
-  --text3: #726752;
-  --text4: #A79979;
+  --text1: #1D1D1F;
+  --text2: #6E6E73;
+  --text3: #86868B;
+  --text4: #AEAEB2;
 
-  --accent: #975C25;
-  --accent2: #7F4C1D;
-  --accent3: #6B4018;
-  --accent-bg: rgba(151,92,37,0.10);
-  --accent-border: rgba(151,92,37,0.30);
+  --accent: #375BFF;
+  --accent2: #2646E0;
+  --accent3: #1B37B8;
+  --accent-bg: rgba(55,91,255,0.08);
+  --accent-border: rgba(55,91,255,0.24);
 
-  --grad: linear-gradient(135deg, #975C25 0%, #8A4433 100%);
-  --grad-warm: linear-gradient(135deg, #7F4C1D 0%, #7F6A18 100%);
-  --grad-cool: linear-gradient(135deg, #3F6B54 0%, #366863 100%);
-  --grad-green: linear-gradient(135deg, #3F6B54 0%, #4F7C63 100%);
+  --grad: linear-gradient(135deg, #375BFF 0%, #6B46E0 100%);
+  --grad-warm: linear-gradient(135deg, #A95D00 0%, #D70015 100%);
+  --grad-cool: linear-gradient(135deg, #0072C6 0%, #0D8CA8 100%);
+  --grad-green: linear-gradient(135deg, #207C36 0%, #0D8CA8 100%);
 
-  --green: #3F6B54;
-  --green-bg: rgba(63,107,84,0.10);
-  --green-border: rgba(63,107,84,0.24);
-  --amber: #7F6A18;
-  --amber-bg: rgba(127,106,24,0.10);
-  --red: #8A4433;
-  --red-bg: rgba(138,68,51,0.10);
-  --blue: #3E5670;
-}
+  --cat-cobalt: #375BFF;
+  --cat-sky: #0072C6;
+  --cat-mint: #207C36;
+  --cat-amber: #A95D00;
+  --cat-red: #D70015;
+  --cat-teal: #0D8CA8;
+  --cat-pink: #C22456;
 
-[data-theme="light"] body {
-  background:
-    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(151,92,37,0.06), transparent),
-    var(--bg);
-}
-
-[data-theme="light"] .spinner {
-  border-top-color: var(--accent);
-}
-
-[data-theme="light"] .btn-primary,
-[data-theme="light"] .btn-primary-grad,
-[data-theme="light"] .cta-brass {
-  color: #FBF7EE !important;
+  --green: #207C36;
+  --green-bg: rgba(32,124,54,0.08);
+  --green-border: rgba(32,124,54,0.22);
+  --amber: #A95D00;
+  --amber-bg: rgba(169,93,0,0.08);
+  --red: #D70015;
+  --red-bg: rgba(215,0,21,0.08);
+  --blue: #0072C6;
 }
 
 * {
@@ -136,70 +137,86 @@ html {
 
 body {
   margin: 0;
-  background:
-    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(200,138,61,0.05), transparent),
-    var(--bg);
+  background: var(--bg);
   color: var(--text1);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
 }
 
-a {
-  color: inherit;
-}
+a { color: inherit; }
 
 h1, h2, h3 {
   font-family: var(--font-display);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
-/* Big numbers (streaks, percentages, day counts) read as data-plate/gauge
-   figures — the mono face gives them a measured, cartographic feel instead
-   of the generic huge-bold-sans-number every dashboard uses. */
 .stat-figure {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }
 
-::-webkit-scrollbar {
-  width: 0px;
-}
+::-webkit-scrollbar { width: 0px; }
 
 :focus-visible {
-  outline: 2px solid var(--accent3);
+  outline: 2px solid var(--accent2);
   outline-offset: 2px;
 }
 
+/* Glass card — the structural signature. Real translucency (Apple HIG's
+   "depth" principle) via backdrop-filter, not a hard 1px border doing all
+   the separation work. */
 .card-feed {
-  background: linear-gradient(180deg, var(--bg3) 0%, var(--bg2) 100%);
-  border: 1px solid var(--border2);
+  background: var(--bg2);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--border);
   border-radius: var(--r-lg);
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.16), 0 10px 28px -14px rgba(0,0,0,0.4);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2), 0 12px 32px -16px rgba(0,0,0,0.5);
   transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), border-color 0.25s ease, box-shadow 0.3s cubic-bezier(0.16,1,0.3,1);
 }
 
 .card-feed:hover {
-  border-color: var(--border3);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2), 0 16px 36px -14px rgba(0,0,0,0.5);
+  border-color: var(--border2);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.24), 0 18px 40px -16px rgba(0,0,0,0.6);
   transform: translateY(-1px);
 }
 
 [data-theme="light"] .card-feed {
-  background: linear-gradient(180deg, #FFFFFF 0%, var(--bg2) 100%);
-  box-shadow: 0 1px 2px rgba(33,28,20,0.06), 0 10px 24px -14px rgba(33,28,20,0.18);
+  box-shadow: 0 1px 2px rgba(29,29,31,0.04), 0 12px 28px -16px rgba(29,29,31,0.14);
 }
 
 [data-theme="light"] .card-feed:hover {
-  box-shadow: 0 2px 6px rgba(33,28,20,0.08), 0 16px 32px -14px rgba(33,28,20,0.22);
+  box-shadow: 0 2px 6px rgba(29,29,31,0.06), 0 18px 36px -16px rgba(29,29,31,0.18);
 }
 
-.card-feed:active {
-  transform: scale(0.98);
+/* Icon tile — the signature element. A colored rounded-square with a
+   white icon, one per category, the way iOS assigns a distinct color to
+   every Settings row and every app icon. Used in the sidebar, dashboard
+   category markers, and settings sections. */
+.icon-tile {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 6px -2px rgba(0,0,0,0.4);
 }
+.icon-tile.sm { width: 28px; height: 28px; border-radius: 8px; }
+.icon-tile.cobalt { background: linear-gradient(160deg, #6E86FF, #4F6BFF); }
+.icon-tile.sky    { background: linear-gradient(160deg, #3FB6FF, #0A9EFF); }
+.icon-tile.mint   { background: linear-gradient(160deg, #5CDE7C, #30D158); }
+.icon-tile.amber  { background: linear-gradient(160deg, #FFB03F, #FF9F0A); }
+.icon-tile.red    { background: linear-gradient(160deg, #FF6B60, #FF453A); }
+.icon-tile.teal   { background: linear-gradient(160deg, #6BD9EC, #40C8E0); }
+.icon-tile.pink   { background: linear-gradient(160deg, #FF6E8C, #FF375F); }
+.icon-tile.gray   { background: linear-gradient(160deg, #6E6E73, #48484A); }
 
 .grad-text {
   background: var(--grad);
@@ -213,12 +230,7 @@ h1, h2, h3 {
   transition: stroke-dashoffset 0.5s ease;
 }
 
-/* Route line — the signature motif. A dotted trail connecting waypoints,
-   used down the sidebar nav and anywhere a sequence of steps/days needs to
-   read as a path rather than a plain list. */
-.route-line {
-  position: relative;
-}
+.route-line { position: relative; }
 .route-line::before {
   content: '';
   position: absolute;
@@ -226,11 +238,7 @@ h1, h2, h3 {
   top: 8px;
   bottom: 8px;
   width: 1px;
-  background: repeating-linear-gradient(
-    to bottom,
-    var(--border2) 0, var(--border2) 3px,
-    transparent 3px, transparent 8px
-  );
+  background: repeating-linear-gradient(to bottom, var(--border2) 0, var(--border2) 3px, transparent 3px, transparent 8px);
   z-index: 0;
 }
 .route-dot {
@@ -240,7 +248,7 @@ h1, h2, h3 {
   height: 7px;
   border-radius: 50%;
   border: 1.5px solid var(--border3);
-  background: var(--bg2);
+  background: var(--bg3);
   flex-shrink: 0;
 }
 .route-dot.done {
@@ -255,63 +263,45 @@ h1, h2, h3 {
   70% { transform: scale(0.9); }
   100% { transform: scale(1); opacity: 1; }
 }
-
 @keyframes flame {
   0%, 100% { transform: scale(1) rotate(-2deg); }
   50% { transform: scale(1.1) rotate(2deg); }
 }
-
 @keyframes slide-up {
   from { transform: translateY(20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
-
 @keyframes page-enter {
   from { opacity: 0; transform: translateY(10px) scale(0.994); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
-
 .page-enter {
   animation: page-enter 0.42s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform, opacity;
 }
-
 @media (prefers-reduced-motion: reduce) {
   .page-enter { animation: none; }
 }
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
+@keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pulse-dot {
   0%, 100% { opacity: 0.3; transform: scale(0.85); }
   50% { opacity: 1; transform: scale(1.15); }
 }
-
 @keyframes confetti-burst {
   0% { transform: translate(-50%, -50%) rotate(0deg); opacity: 1; }
   100% { transform: translate(calc(-50% + var(--dx) + var(--drift)), calc(-50% + var(--dy) + 60px)) rotate(var(--rot)); opacity: 0; }
 }
-
 @keyframes streak-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(200,138,61,0); }
-  50% { box-shadow: 0 0 0 6px rgba(200,138,61,0.10); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,159,10,0); }
+  50% { box-shadow: 0 0 0 6px rgba(255,159,10,0.12); }
 }
-
-.streak-hot {
-  animation: streak-glow 2.2s ease-in-out infinite;
-}
-
+.streak-hot { animation: streak-glow 2.2s ease-in-out infinite; }
 @keyframes check-pop {
   0% { transform: scale(0.6); }
   55% { transform: scale(1.25); }
   100% { transform: scale(1); }
 }
-
-.check-pop {
-  animation: check-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
+.check-pop { animation: check-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1); }
 
 .animate-bounce-in { animation: bounce-in 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
 .animate-flame { animation: flame 1s ease-in-out infinite; }
@@ -323,21 +313,20 @@ h1, h2, h3 {
   left: 12px;
   right: 12px;
   height: 60px;
-  background: rgba(28,25,21,0.72);
+  background: rgba(28,28,30,0.72);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid var(--border2);
-  border-radius: 20px;
+  border-radius: 22px;
   display: flex;
   align-items: center;
   justify-content: space-around;
   z-index: 100;
   box-shadow: 0 10px 34px -10px rgba(0,0,0,0.55), 0 2px 10px rgba(0,0,0,0.3);
 }
-
 [data-theme="light"] .bottom-nav {
   background: rgba(255,255,255,0.78);
-  box-shadow: 0 10px 30px -10px rgba(33,28,20,0.22), 0 2px 8px rgba(33,28,20,0.08);
+  box-shadow: 0 10px 30px -10px rgba(29,29,31,0.2), 0 2px 8px rgba(29,29,31,0.08);
 }
 
 .btn-pill {
@@ -350,19 +339,9 @@ h1, h2, h3 {
   transition: all 0.2s;
   font-family: inherit;
 }
-
 .btn-pill:active { transform: scale(0.95); }
-
-.btn-primary-grad {
-  background: var(--grad);
-  color: #1A1410;
-  box-shadow: 0 4px 20px rgba(200,138,61,0.35);
-}
-
-.btn-primary-grad:hover {
-  box-shadow: 0 6px 28px rgba(200,138,61,0.5);
-  transform: translateY(-1px);
-}
+.btn-primary-grad { background: var(--grad); color: #fff; box-shadow: 0 4px 20px rgba(79,107,255,0.35); }
+.btn-primary-grad:hover { box-shadow: 0 6px 28px rgba(79,107,255,0.5); transform: translateY(-1px); }
 
 .btn {
   display: inline-flex;
@@ -380,47 +359,18 @@ h1, h2, h3 {
   font-family: inherit;
   text-decoration: none;
 }
-
-.btn:hover {
-  transform: translateY(-1px);
-}
-
+.btn:hover { transform: translateY(-1px); }
 .btn:active { transform: scale(0.97); }
-
-.btn-primary {
-  background: var(--grad);
-  color: #1A1410;
-  font-weight: 700;
-  box-shadow: 0 4px 18px rgba(200,138,61,0.3);
-}
-
-.btn-ghost {
-  background: var(--bg3);
-  color: var(--text2);
-  border: 1px solid var(--border2);
-}
-
-.btn-danger {
-  background: var(--red-bg);
-  color: var(--red);
-  border: 1px solid rgba(187,100,83,0.24);
-}
-
+.btn-primary { background: var(--grad); color: #fff; font-weight: 700; box-shadow: 0 4px 18px rgba(79,107,255,0.32); }
+.btn-ghost { background: var(--bg4); color: var(--text2); border: 1px solid var(--border2); }
+.btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid rgba(255,69,58,0.28); }
 .btn-sm { height: 30px; padding: 0 12px; font-size: 12px; }
 .btn-lg { height: 44px; padding: 0 22px; font-size: 14px; }
 .btn-icon { width: 36px; padding: 0; justify-content: center; }
 
-.cta-brass {
-  background: var(--accent);
-  color: #1A1410 !important;
-}
-.cta-brass:hover {
-  background: var(--accent2);
-}
-
 .input {
   width: 100%;
-  background: var(--bg3);
+  background: var(--bg4);
   border: 1px solid var(--border2);
   border-radius: var(--r);
   padding: 0 14px;
@@ -431,12 +381,7 @@ h1, h2, h3 {
   outline: none;
   transition: border-color 0.22s cubic-bezier(0.16,1,0.3,1), box-shadow 0.22s cubic-bezier(0.16,1,0.3,1), background 0.18s ease;
 }
-
-.input:focus {
-  border-color: var(--accent2);
-  box-shadow: 0 0 0 3px var(--accent-bg);
-}
-
+.input:focus { border-color: var(--accent2); box-shadow: 0 0 0 4px var(--accent-bg); }
 .input::placeholder { color: var(--text3); }
 textarea.input { height: auto; min-height: 100px; padding: 12px 14px; resize: vertical; }
 select.input { appearance: none; cursor: pointer; }
@@ -447,7 +392,7 @@ select.input { appearance: none; cursor: pointer; }
   font-weight: 700;
   color: var(--text3);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   margin-bottom: 8px;
 }
 
@@ -462,13 +407,12 @@ select.input { appearance: none; cursor: pointer; }
   background: var(--bg4);
   color: var(--text2);
 }
-
-.chip-sql { background: rgba(100,128,162,0.14); color: #8FADD1; border-color: rgba(100,128,162,0.26); }
-.chip-python { background: rgba(91,138,114,0.14); color: #8CBB9F; border-color: rgba(91,138,114,0.26); }
-.chip-bi { background: rgba(182,112,140,0.14); color: #D598B3; border-color: rgba(182,112,140,0.26); }
-.chip-ai { background: rgba(200,138,61,0.14); color: #E8C084; border-color: rgba(200,138,61,0.26); }
-.chip-git { background: rgba(244,238,226,0.08); color: #CFC6B5; border-color: rgba(244,238,226,0.16); }
-.chip-js { background: rgba(201,162,39,0.14); color: #E3C862; border-color: rgba(201,162,39,0.26); }
+.chip-sql { background: rgba(10,158,255,0.14); color: #6BC2FF; border-color: rgba(10,158,255,0.28); }
+.chip-python { background: rgba(48,209,88,0.14); color: #6EE38A; border-color: rgba(48,209,88,0.28); }
+.chip-bi { background: rgba(255,55,95,0.14); color: #FF7A96; border-color: rgba(255,55,95,0.28); }
+.chip-ai { background: rgba(79,107,255,0.14); color: #93A5FF; border-color: rgba(79,107,255,0.28); }
+.chip-git { background: rgba(255,255,255,0.08); color: #CFCFD2; border-color: rgba(255,255,255,0.16); }
+.chip-js { background: rgba(255,159,10,0.14); color: #FFC369; border-color: rgba(255,159,10,0.28); }
 .chip-default { background: var(--bg4); color: var(--text2); border-color: var(--border2); }
 
 .section-title {
@@ -476,7 +420,7 @@ select.input { appearance: none; cursor: pointer; }
   font-weight: 700;
   color: var(--text3);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   margin-bottom: 10px;
 }
 
@@ -484,7 +428,7 @@ select.input { appearance: none; cursor: pointer; }
   width: 18px;
   height: 18px;
   border: 2px solid var(--border2);
-  border-top-color: var(--accent3);
+  border-top-color: var(--accent2);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -493,7 +437,6 @@ select.input { appearance: none; cursor: pointer; }
   0% { background-position: -300px 0; }
   100% { background-position: 300px 0; }
 }
-
 .skeleton-block {
   display: block;
   border-radius: var(--r-sm);
@@ -502,18 +445,15 @@ select.input { appearance: none; cursor: pointer; }
   animation: shimmer 1.6s ease-in-out infinite;
 }
 
-.desktop-only {
-  display: flex;
-}
+.desktop-only { display: flex; }
+
+.cta-brass { background: var(--accent); color: #fff !important; }
+.cta-brass:hover { background: var(--accent2); }
 
 @media (max-width: 768px) {
   .desktop-only { display: none !important; }
-  .page-shell {
-    margin-left: 0 !important;
-    padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
-  }
+  .page-shell { margin-left: 0 !important; padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important; }
 }
-
 @media (min-width: 769px) {
   .mobile-only { display: none !important; }
 }

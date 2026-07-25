@@ -15,14 +15,14 @@ export default function LoginPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'radial-gradient(ellipse at top, #241a10 0%, #14120F 60%)',
+      background: 'radial-gradient(ellipse at top, #000000 0%, #000000 60%)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px'
     }}>
       {/* Glow */}
       <div style={{
         position: 'fixed', top: '20%', left: '50%', transform: 'translate(-50%,-50%)',
         width: '600px', height: '400px', borderRadius: '50%',
-        background: 'radial-gradient(ellipse, rgba(200,138,61,0.15) 0%, transparent 70%)',
+        background: 'radial-gradient(ellipse, rgba(79,107,255,0.15) 0%, transparent 70%)',
         pointerEvents: 'none'
       }} />
 
@@ -31,25 +31,25 @@ export default function LoginPage() {
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
           <div style={{
             width: '56px', height: '56px', borderRadius: '16px',
-            background: 'linear-gradient(135deg, #C88A3D, #E8C084)',
+            background: 'linear-gradient(135deg, #4F6BFF, #93A5FF)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '22px', fontWeight: '800', color: '#fff',
-            margin: '0 auto 16px', boxShadow: '0 8px 32px rgba(200,138,61,0.4)'
+            margin: '0 auto 16px', boxShadow: '0 8px 32px rgba(79,107,255,0.4)'
           }}>R</div>
           <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#fff', margin: '0 0 6px', letterSpacing: '-0.5px' }}>RoadMaper</h1>
-          <p style={{ fontSize: '14px', color: 'rgba(244,238,226,0.4)', margin: 0 }}>
+          <p style={{ fontSize: '14px', color: 'rgba(245,245,247,0.4)', margin: 0 }}>
             AI-powered learning for any goal
           </p>
         </div>
 
         {/* Card */}
         <div style={{
-          background: 'rgba(244,238,226,0.04)',
-          border: '1px solid rgba(244,238,226,0.1)',
+          background: 'rgba(245,245,247,0.04)',
+          border: '1px solid rgba(245,245,247,0.1)',
           borderRadius: '20px', padding: '28px',
           backdropFilter: 'blur(20px)'
         }}>
-          <p style={{ fontSize: '13px', color: 'rgba(244,238,226,0.5)', textAlign: 'center', marginBottom: '16px' }}>
+          <p style={{ fontSize: '13px', color: 'rgba(245,245,247,0.5)', textAlign: 'center', marginBottom: '16px' }}>
             Sign in to continue
           </p>
 
@@ -59,7 +59,7 @@ export default function LoginPage() {
             disabled={!!loading}
             style={{
               width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-              height: '46px', borderRadius: '12px', background: '#fff', color: '#241F18',
+              height: '46px', borderRadius: '12px', background: '#fff', color: '#1C1C1E',
               border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
               fontSize: '14px', fontWeight: '600', marginBottom: '10px',
               opacity: loading && loading !== 'google' ? 0.4 : 1,
@@ -85,8 +85,8 @@ export default function LoginPage() {
             style={{
               width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
               height: '46px', borderRadius: '12px',
-              background: 'rgba(244,238,226,0.06)', color: '#fff',
-              border: '1px solid rgba(244,238,226,0.12)',
+              background: 'rgba(245,245,247,0.06)', color: '#fff',
+              border: '1px solid rgba(245,245,247,0.12)',
               cursor: loading ? 'not-allowed' : 'pointer',
               fontSize: '14px', fontWeight: '600',
               opacity: loading && loading !== 'github' ? 0.4 : 1,
@@ -103,7 +103,7 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <p style={{ fontSize: '11px', color: 'rgba(244,238,226,0.25)', textAlign: 'center', marginTop: '16px' }}>
+        <p style={{ fontSize: '11px', color: 'rgba(245,245,247,0.25)', textAlign: 'center', marginTop: '16px' }}>
           By continuing you agree to our Terms & Privacy Policy
         </p>
       </div>

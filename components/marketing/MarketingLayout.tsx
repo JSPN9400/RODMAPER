@@ -20,23 +20,23 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
 
   if (!isMounted) {
     return (
-      <div style={{ minHeight: '100vh', background: '#14120F', color: '#F4EEE2' }} />
+      <div style={{ minHeight: '100vh', background: '#000000', color: '#F5F5F7' }} />
     )
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#14120F', color: '#F4EEE2', fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#000000', color: '#F5F5F7', fontFamily: "'Inter', system-ui, sans-serif" }}>
       <MarketingNav />
       <main style={{ paddingTop: '60px' }}>{children}</main>
-      <footer style={{ borderTop: '1px solid rgba(244,238,226,0.06)', padding: '40px', marginTop: '80px' }}>
+      <footer style={{ borderTop: '1px solid rgba(245,245,247,0.06)', padding: '40px', marginTop: '80px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: 'linear-gradient(135deg, #C88A3D, #E8C084)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '800', color: '#fff' }}>R</div>
-            <span style={{ fontSize: '13px', color: 'rgba(244,238,226,0.4)' }}>RoadMaper © 2026 · All rights reserved</span>
+            <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: 'linear-gradient(135deg, #4F6BFF, #93A5FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '800', color: '#fff' }}>R</div>
+            <span style={{ fontSize: '13px', color: 'rgba(245,245,247,0.4)' }}>RoadMaper © 2026 · All rights reserved</span>
           </div>
           <div style={{ display: 'flex', gap: '24px' }}>
             {['Privacy', 'Terms', 'Contact'].map((label) => (
-              <Link key={label} href="#" style={{ fontSize: '13px', color: 'rgba(244,238,226,0.4)', textDecoration: 'none' }}>{label}</Link>
+              <Link key={label} href="#" style={{ fontSize: '13px', color: 'rgba(245,245,247,0.4)', textDecoration: 'none' }}>{label}</Link>
             ))}
           </div>
         </div>

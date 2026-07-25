@@ -13,8 +13,8 @@ import { ArrowRight, Compass, Flame, MoreHorizontal, PenLine, Plus, Sparkles, Ta
 import { PageError, DashboardSkeleton, EmptyState } from '@/components/ui/PageState'
 
 const BAR: Record<string, string> = {
-  violet: '#C88A3D', blue: '#6480A2', green: '#5B8A72',
-  amber: '#C9A227', red: '#BB6453', teal: '#4C8C89', pink: '#B6708C'
+  violet: '#4F6BFF', blue: '#0A9EFF', green: '#30D158',
+  amber: '#FF9F0A', red: '#FF453A', teal: '#40C8E0', pink: '#FF375F'
 }
 
 function ProgressRing({ value, color }: { value: number; color: string }) {
@@ -23,7 +23,7 @@ function ProgressRing({ value, color }: { value: number; color: string }) {
   const offset = circumference - (value / 100) * circumference
   return (
     <svg width="72" height="72" viewBox="0 0 72 72">
-      <circle cx="36" cy="36" r={radius} stroke="rgba(244,238,226,0.08)" strokeWidth="6" fill="none" />
+      <circle cx="36" cy="36" r={radius} stroke="rgba(245,245,247,0.08)" strokeWidth="6" fill="none" />
       <circle className="ring-progress" cx="36" cy="36" r={radius} stroke={color} strokeWidth="6" strokeDasharray={circumference} strokeDashoffset={offset} fill="none" />
       <text x="36" y="41" textAnchor="middle" fill="var(--text1)" fontSize="14" fontWeight="700">{value}%</text>
     </svg>
@@ -31,9 +31,9 @@ function ProgressRing({ value, color }: { value: number; color: string }) {
 }
 
 const ONBOARD_STEPS = [
-  { icon: Compass, title: 'Describe a goal', desc: 'A skill, an exam, a subject — anything you want to learn.' },
-  { icon: Sparkles, title: 'Get a plan', desc: 'AI builds a day-by-day or phased roadmap around it.' },
-  { icon: Flame, title: 'Track it daily', desc: 'Check off tasks, build a streak, watch progress add up.' },
+  { icon: Compass, title: 'Describe a goal', desc: 'A skill, an exam, a subject — anything you want to learn.', tile: 'cobalt' },
+  { icon: Sparkles, title: 'Get a plan', desc: 'AI builds a day-by-day or phased roadmap around it.', tile: 'sky' },
+  { icon: Flame, title: 'Track it daily', desc: 'Check off tasks, build a streak, watch progress add up.', tile: 'amber' },
 ]
 
 export default function DashboardPage() {
@@ -97,22 +97,15 @@ export default function DashboardPage() {
           You don&apos;t have a roadmap yet — here&apos;s how it works.
         </p>
 
-        <div className="route-line" style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '26px', paddingLeft: '2px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '26px' }}>
           {ONBOARD_STEPS.map((step, i) => (
-            <div key={i} style={{ display: 'flex', gap: '14px', padding: '12px 4px' }}>
-              <span className="route-dot" style={{ marginTop: '6px' }} />
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                <div style={{
-                  width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
-                  background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <step.icon size={16} style={{ color: 'var(--accent3)' }} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: '700', marginBottom: '2px' }}>{step.title}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text3)' }}>{step.desc}</div>
-                </div>
+            <div key={i} style={{ display: 'flex', gap: '14px', padding: '12px 4px', alignItems: 'flex-start' }}>
+              <div className={`icon-tile ${step.tile}`}>
+                <step.icon size={16} />
+              </div>
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: '700', marginBottom: '2px' }}>{step.title}</div>
+                <div style={{ fontSize: '12px', color: 'var(--text3)' }}>{step.desc}</div>
               </div>
             </div>
           ))}
@@ -145,7 +138,7 @@ export default function DashboardPage() {
       <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', marginBottom: '18px', paddingBottom: '2px' }}>
         <div className={`card-feed ${streak >= 3 ? 'streak-hot' : ''}`} style={{ minWidth: '124px', padding: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <Flame size={16} className={streak >= 3 ? 'animate-flame' : ''} style={{ color: streak >= 3 ? '#C9A227' : 'var(--text4)' }} />
+            <Flame size={16} className={streak >= 3 ? 'animate-flame' : ''} style={{ color: streak >= 3 ? '#FF9F0A' : 'var(--text4)' }} />
             <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Streak</span>
           </div>
           <div className="stat-figure" style={{ fontSize: '24px', fontWeight: '800' }}>{streak}<span style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text3)' }}> {streak === 1 ? 'day' : 'days'}</span></div>

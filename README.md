@@ -833,3 +833,63 @@ Addressed the highest-impact pieces:
 a full onboarding-tour animation sequence, per-component micro-interaction
 audit beyond buttons/inputs/cards, and a genuine icon set redesign (still
 using stock `lucide-react` icons throughout).
+
+---
+
+## 25. Full redesign: "Command Center" (replaces the previous "Field Journal" theme)
+
+Feedback was direct: the previous theme (warm dark ink + brass accent +
+serif display face) still read as a safe default — a warm-earthy palette
+with a characterful serif is really the same move as the light-mode
+"cream + terracotta + serif" cliché, just inverted to dark mode. Redone
+from scratch, following a real brainstorm → token plan → critique →
+build process, with explicit inspiration from Apple's HIG (clarity,
+deference to content, depth via translucency) — adapted into RoadMaper's
+own values, not copied.
+
+**Color** (`app/globals.css` `:root` / `[data-theme="light"]`): true
+near-black (`#000000`, not a warm or blue-tinted dark) instead of ink;
+a cobalt-blue primary accent (`#4F6BFF`) instead of brass; and — the
+bigger shift — **seven distinct vivid category colors** (cobalt, sky,
+mint, amber, red, teal, pink) used consistently per section/nav-item/
+roadmap, the way iOS assigns a color to every Settings row and app icon,
+instead of one muted accent doing everything. Every color was contrast-
+checked against WCAG AA on both themes (three values had to be nudged
+darker/lighter to clear 4.5:1 — documented the same way as the previous
+pass). Light theme mirrors Apple's exact `systemGroupedBackground` logic:
+light-gray canvas (`#F5F5F7`), white cards, near-black text (`#1D1D1F`).
+
+**Type**: Manrope (a geometric, rounded-terminal sans, the closest
+Google-Fonts-licensable analogue to SF Pro Rounded) replaces the serif
+Fraunces for headings — Apple's own type system is sans-only, and a
+serif display face was working against the direction, not for it. Body
+(IBM Plex Sans) and data/mono (IBM Plex Mono) faces are unchanged.
+
+**Structure — glass over borders.** `.card-feed` no longer relies on a
+flat background + 1px border for separation; it's a real translucent
+surface (`backdrop-filter: blur(20px) saturate(180%)`) with a two-layer
+shadow, which is literally Apple HIG's "depth" principle (materials, not
+just flat panels) rather than a decorative choice.
+
+**Signature: icon tiles.** The one deliberately bold, recognizable
+element — a colored rounded-square icon badge per category
+(`.icon-tile` + `.cobalt/.sky/.mint/.amber/.red/.teal/.pink` in
+`globals.css`), applied to every sidebar nav item and (already, from the
+Settings redesign) several settings sections. This is the single most
+recognizable piece of Apple's own visual vocabulary (Settings app, home
+screen icons), borrowed as a *pattern*, not by copying any of Apple's
+actual colors or icons. Nav items dim their tile to 55% opacity when
+inactive, full color + tinted label when active — restrained, not applied
+everywhere at once, per the skill's "spend your boldness in one place."
+
+**What changed structurally in navigation**: the previous theme's
+route-line/waypoint-dot motif (appropriate for "Field Journal," not for
+this direction) was removed from the sidebar entirely and replaced by
+the icon-tile system so there's exactly one signature motif, not two
+competing ones.
+
+**Not restyled in this pass**: the marketing pages' bespoke layout
+structure (content/copy/sections) — only their color values, which the
+earlier sweep already keeps in sync with whatever `:root` defines, so
+they picked up the new palette automatically without needing individual
+edits.

@@ -6,7 +6,7 @@
  */
 
 import type { Metadata } from 'next'
-import { Fraunces, IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google'
+import { Manrope, IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google'
 import './globals.css'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -14,11 +14,10 @@ import Sidebar from '@/components/ui/Sidebar'
 import SessionProvider from '@/components/ui/SessionProvider'
 import PageTransition from '@/components/ui/PageTransition'
 
-const fraunces = Fraunces({
+const manrope = Manrope({
   subsets: ['latin'],
-  variable: '--font-fraunces',
-  weight: ['500', '600', '700', '900'],
-  style: ['normal', 'italic'],
+  variable: '--font-manrope',
+  weight: ['600', '700', '800'],
   display: 'swap',
 })
 const plexSans = IBM_Plex_Sans({
@@ -42,9 +41,9 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions)
   return (
-    <html lang="en" suppressHydrationWarning className={`${fraunces.variable} ${plexSans.variable} ${plexMono.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${manrope.variable} ${plexSans.variable} ${plexMono.variable}`}>
       <head>
-        <meta name="theme-color" content="#14120F" />
+        <meta name="theme-color" content="#000000" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         {/* Runs before paint so the correct theme is set immediately —
             avoids a flash of dark theme for users who picked light. */}

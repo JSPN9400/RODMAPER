@@ -19,7 +19,7 @@ export function PageSpinner({ label = 'Loading...' }: { label?: string }) {
 export function PageError({ title, message }: { title: string; message: string }) {
   return (
     <div style={{ padding:'36px 24px', maxWidth:'480px', margin:'0 auto' }}>
-      <div style={{ background:'var(--red-bg)', border:'1px solid rgba(187,100,83,0.2)', borderRadius:'14px', padding:'20px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+      <div style={{ background:'var(--red-bg)', border:'1px solid rgba(255,69,58,0.2)', borderRadius:'14px', padding:'20px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
         <div style={{ fontSize: '18px', flexShrink: 0, lineHeight: 1 }}>⚠️</div>
         <div>
           <div style={{ fontSize:'15px', fontWeight:'600', color:'var(--text1)', marginBottom:'6px' }}>{title}</div>

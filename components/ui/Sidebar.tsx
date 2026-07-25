@@ -14,23 +14,23 @@ import { LayoutDashboard, Zap, Map, Plus, Bell, BarChart2, Settings, LogOut, Bra
 import { useTheme } from '@/lib/theme-client'
 
 const NAV = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/today', label: 'Today', icon: Zap, badge: 'LIVE' },
-  { href: '/mentor', label: 'AI Mentor', icon: MessageCircle, badge: 'NEW' },
-  { href: '/roadmap', label: 'Roadmaps', icon: Map },
-  { href: '/create', label: 'New Roadmap', icon: Plus },
-  { href: '/insights', label: 'AI Insights', icon: Brain },
-  { href: '/reminders', label: 'Reminders', icon: Bell },
-  { href: '/reports', label: 'Reports', icon: BarChart2 },
-  { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, tile: 'cobalt' },
+  { href: '/today', label: 'Today', icon: Zap, badge: 'LIVE', tile: 'mint' },
+  { href: '/mentor', label: 'AI Mentor', icon: MessageCircle, badge: 'NEW', tile: 'pink' },
+  { href: '/roadmap', label: 'Roadmaps', icon: Map, tile: 'sky' },
+  { href: '/create', label: 'New Roadmap', icon: Plus, tile: 'mint' },
+  { href: '/insights', label: 'AI Insights', icon: Brain, tile: 'teal' },
+  { href: '/reminders', label: 'Reminders', icon: Bell, tile: 'amber' },
+  { href: '/reports', label: 'Reports', icon: BarChart2, tile: 'sky' },
+  { href: '/settings', label: 'Settings', icon: Settings, tile: 'gray' },
 ]
 
 const MOBILE_NAV = [
-  { href: '/dashboard', label: 'Home', icon: LayoutDashboard },
-  { href: '/today', label: 'Today', icon: Zap },
-  { href: '/mentor', label: 'Mentor', icon: MessageCircle },
-  { href: '/create', label: 'Create', icon: Plus },
-  { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/dashboard', label: 'Home', icon: LayoutDashboard, tile: 'cobalt' },
+  { href: '/today', label: 'Today', icon: Zap, tile: 'mint' },
+  { href: '/mentor', label: 'Mentor', icon: MessageCircle, tile: 'pink' },
+  { href: '/create', label: 'Create', icon: Plus, tile: 'mint' },
+  { href: '/settings', label: 'Settings', icon: Settings, tile: 'gray' },
 ]
 
 export default function Sidebar({ user }: { user: any }) {
@@ -43,7 +43,7 @@ export default function Sidebar({ user }: { user: any }) {
       {/* Desktop sidebar */}
       <aside className="desktop-only" style={{
         position: 'fixed', left: 0, top: 0, height: '100vh', width: '220px',
-        background: 'rgba(20,18,15,0.95)', borderRight: '1px solid var(--border)',
+        background: 'var(--bg2-solid)', borderRight: '1px solid var(--border)',
         boxShadow: '4px 0 24px -8px rgba(0,0,0,0.35)',
         flexDirection: 'column', zIndex: 40, backdropFilter: 'blur(20px)'
       }}>
@@ -52,9 +52,9 @@ export default function Sidebar({ user }: { user: any }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
               width: '28px', height: '28px', borderRadius: '8px',
-              background: 'linear-gradient(135deg, #C88A3D, #E8C084)',
+              background: 'linear-gradient(135deg, #4F6BFF, #93A5FF)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '13px', fontWeight: '700', color: '#1A1410'
+              fontSize: '13px', fontWeight: '700', color: '#FFFFFF'
             }}>R</div>
             <div>
               <div className="font-display" style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text1)', letterSpacing: '-0.3px' }}>RoadMaper</div>
@@ -63,22 +63,22 @@ export default function Sidebar({ user }: { user: any }) {
           </div>
         </div>
 
-        {/* Nav — laid out as waypoints along a route, echoing the brand */}
-        <nav className="route-line" style={{ flex: 1, padding: '14px 8px 10px 10px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          {NAV.map(({ href, label, icon: Icon, badge }: any) => {
+        {/* Nav — each item gets its own colored icon tile, iOS Settings-style */}
+        <nav style={{ flex: 1, padding: '10px 8px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {NAV.map(({ href, label, icon: Icon, badge, tile }: any) => {
             const active = isActive(href)
             return (
               <Link key={href} href={href} style={{
                 display: 'flex', alignItems: 'center', gap: '10px',
-                padding: '6px 10px 6px 4px', borderRadius: '8px',
-                fontSize: '13px', fontWeight: active ? '600' : '400',
+                padding: '6px 8px', borderRadius: '10px',
+                fontSize: '13px', fontWeight: active ? '600' : '500',
                 color: active ? 'var(--text1)' : 'var(--text3)',
-                background: active ? 'rgba(200,138,61,0.13)' : 'transparent',
-                textDecoration: 'none', transition: 'background 0.25s cubic-bezier(0.16,1,0.3,1), border-color 0.25s cubic-bezier(0.16,1,0.3,1), color 0.2s ease',
-                border: active ? '1px solid var(--accent-border)' : '1px solid transparent'
+                background: active ? 'var(--bg4)' : 'transparent',
+                textDecoration: 'none', transition: 'background 0.25s cubic-bezier(0.16,1,0.3,1), color 0.2s ease',
               }}>
-                <span className={`route-dot ${active ? 'done' : ''}`} />
-                <Icon size={14} style={{ color: active ? '#E8C084' : 'inherit', flexShrink: 0 }} />
+                <div className={`icon-tile sm ${tile}`} style={{ opacity: active ? 1 : 0.55, transition: 'opacity 0.2s ease' }}>
+                  <Icon size={14} />
+                </div>
                 <span style={{ flex: 1 }}>{label}</span>
                 {badge && (
                   <span style={{ fontSize: '9px', fontWeight: '700', padding: '1px 5px', background: 'var(--green-bg)', color: 'var(--green)', border: '1px solid var(--green-border)', borderRadius: '3px' }}>{badge}</span>
@@ -94,7 +94,7 @@ export default function Sidebar({ user }: { user: any }) {
             {user?.image ? (
               <Image src={user.image} alt="" width={24} height={24} style={{ borderRadius: '50%' }} />
             ) : (
-              <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #C88A3D, #E8C084)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: '#1A1410' }}>
+              <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #4F6BFF, #93A5FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: '#FFFFFF' }}>
                 {(user?.name || user?.email || 'U')[0].toUpperCase()}
               </div>
             )}
@@ -114,21 +114,22 @@ export default function Sidebar({ user }: { user: any }) {
 
       {/* Mobile bottom nav */}
       <nav className="bottom-nav mobile-only">
-        {MOBILE_NAV.map(({ href, label, icon: Icon }) => {
+        {MOBILE_NAV.map(({ href, label, icon: Icon, tile }) => {
           const active = isActive(href)
+          const activeColor = `var(--cat-${tile})`
           return (
             <Link key={href} href={href} style={{
               position: 'relative',
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
               padding: '6px 14px', textDecoration: 'none', minWidth: '48px',
-              color: active ? '#E8C084' : 'var(--text4)',
+              color: active ? activeColor : 'var(--text4)',
               transition: 'color 0.2s ease',
             }}>
               <span style={{
                 position: 'absolute', top: '-1px', left: '50%',
                 width: active ? '18px' : '0px', height: '2.5px', borderRadius: '999px',
-                background: 'var(--grad)', transform: 'translateX(-50%)',
-                transition: 'width 0.22s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                background: activeColor, transform: 'translateX(-50%)',
+                transition: 'width 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease',
               }} />
               <Icon size={20} style={{ transform: active ? 'translateY(-1px) scale(1.06)' : 'none', transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)' }} />
               <span style={{ fontSize: '10px', fontWeight: active ? '600' : '400', transition: 'font-weight 0.15s' }}>{label}</span>

@@ -31,13 +31,13 @@ const examTypeOptions: { value: ExamType; label: string }[] = [
   { value: 'research', label: 'Research / PhD' },
 ]
 const colorOptions = [
-  { value: 'violet', label: 'Brass', hex: '#C88A3D' },
-  { value: 'blue', label: 'Slate', hex: '#6480A2' },
-  { value: 'green', label: 'Pine', hex: '#5B8A72' },
-  { value: 'amber', label: 'Ochre', hex: '#C9A227' },
-  { value: 'red', label: 'Rust', hex: '#BB6453' },
-  { value: 'teal', label: 'Teal', hex: '#4C8C89' },
-  { value: 'pink', label: 'Rose', hex: '#B6708C' },
+  { value: 'violet', label: 'Cobalt', hex: '#4F6BFF' },
+  { value: 'blue', label: 'Sky', hex: '#0A9EFF' },
+  { value: 'green', label: 'Mint', hex: '#30D158' },
+  { value: 'amber', label: 'Amber', hex: '#FF9F0A' },
+  { value: 'red', label: 'Red', hex: '#FF453A' },
+  { value: 'teal', label: 'Teal', hex: '#40C8E0' },
+  { value: 'pink', label: 'Pink', hex: '#FF375F' },
 ]
 
 export default function CreateRoadmapPage() {
@@ -225,7 +225,7 @@ export default function CreateRoadmapPage() {
       </p>
 
       {error && (
-        <div style={{ marginBottom: '16px', padding: '12px 14px', background: 'var(--red-bg)', border: '1px solid rgba(187,100,83,0.2)', borderRadius: '8px', fontSize: '13px', color: 'var(--red)' }}>
+        <div style={{ marginBottom: '16px', padding: '12px 14px', background: 'var(--red-bg)', border: '1px solid rgba(255,69,58,0.2)', borderRadius: '8px', fontSize: '13px', color: 'var(--red)' }}>
           {error}
         </div>
       )}
@@ -236,17 +236,17 @@ export default function CreateRoadmapPage() {
             <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '14px' }}>Choose your creation path</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '12px', marginBottom: '18px' }}>
               <button onClick={() => { setGoalType('short_term'); setStep(2) }} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px', textAlign: 'left', cursor: 'pointer' }}>
-                <CalendarDays size={18} style={{ marginBottom: '10px', color: '#C88A3D' }} />
+                <CalendarDays size={18} style={{ marginBottom: '10px', color: '#4F6BFF' }} />
                 <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '6px' }}>Short Term AI</div>
                 <div style={{ fontSize: '12px', color: 'var(--text3)' }}>Under 90 days. AI-crafted study plan for quick revisions, skill learning, or focused preps.</div>
               </button>
               <button onClick={() => { setGoalType('long_term'); setStep(2) }} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px', textAlign: 'left', cursor: 'pointer' }}>
-                <GraduationCap size={18} style={{ marginBottom: '10px', color: '#6480A2' }} />
+                <GraduationCap size={18} style={{ marginBottom: '10px', color: '#0A9EFF' }} />
                 <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '6px' }}>Long Term AI</div>
                 <div style={{ fontSize: '12px', color: 'var(--text3)' }}>90+ days. Structured AI syllabus for major exams, college degrees, or career pathways.</div>
               </button>
               <button onClick={() => { setGoalType('manual'); setStep(2) }} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px', textAlign: 'left', cursor: 'pointer' }}>
-                <PenLine size={18} style={{ marginBottom: '10px', color: '#4C8C89' }} />
+                <PenLine size={18} style={{ marginBottom: '10px', color: '#40C8E0' }} />
                 <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '6px' }}>Manual Roadmap</div>
                 <div style={{ fontSize: '12px', color: 'var(--text3)' }}>Total control. Create your own stages, projects, and schedule from scratch.</div>
               </button>

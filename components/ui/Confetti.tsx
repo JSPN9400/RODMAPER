@@ -8,7 +8,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 
-const COLORS = ['#C88A3D', '#5B8A72', '#C9A227', '#B6708C', '#6480A2', '#E8C084']
+const COLORS = ['#4F6BFF', '#30D158', '#FF9F0A', '#FF375F', '#0A9EFF', '#93A5FF']
 
 type Piece = { id: number; x: number; rotate: number; delay: number; color: string; drift: number }
 

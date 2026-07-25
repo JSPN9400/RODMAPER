@@ -110,7 +110,7 @@ export default function MentorPage() {
               maxWidth: '82%', padding: '10px 14px', borderRadius: m.role === 'user' ? '14px 14px 3px 14px' : '14px 14px 14px 3px',
               background: m.role === 'user' ? 'var(--grad)' : 'var(--bg2)',
               border: m.role === 'user' ? 'none' : '1px solid var(--border)',
-              color: m.role === 'user' ? '#1A1410' : 'var(--text1)',
+              color: m.role === 'user' ? '#FFFFFF' : 'var(--text1)',
               fontSize: '13.5px', lineHeight: '1.55', whiteSpace: 'pre-wrap',
             }}>
               {m.content}

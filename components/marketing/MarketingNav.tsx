@@ -15,7 +15,7 @@ export default function MarketingNav() {
       className="fixed top-0 left-0 right-0 z-50 h-[60px] flex items-center justify-between border-b border-white/[0.06] bg-zinc-950/85 backdrop-blur-md px-4 sm:px-10"
     >
       <Link href="/" className="flex items-center gap-2.5 no-underline">
-        <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #C88A3D, #E8C084)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '800', color: '#fff' }}>R</div>
+        <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #4F6BFF, #93A5FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '800', color: '#fff' }}>R</div>
         <span style={{ fontSize: '15px', fontWeight: '700', color: '#fff', letterSpacing: '-0.3px' }}>RoadMaper</span>
       </Link>
       <div className="hidden md:flex items-center gap-8">

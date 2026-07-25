@@ -457,13 +457,13 @@ export default function SettingsPage() {
         </div>
 
         {/* Ambient focus music player */}
-        <div className="card-feed" style={{ padding: '20px', border: synthPlaying ? '1px solid rgba(200,138,61,0.4)' : '1px solid rgba(244,238,226,0.06)', transition: 'border 0.3s' }}>
+        <div className="card-feed" style={{ padding: '20px', border: synthPlaying ? '1px solid rgba(79,107,255,0.4)' : '1px solid rgba(245,245,247,0.06)', transition: 'border 0.3s' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Moon size={15} style={{ color: synthPlaying ? '#E8C084' : 'var(--text4)' }} />
+              <Moon size={15} style={{ color: synthPlaying ? '#93A5FF' : 'var(--text4)' }} />
               <span style={{ fontSize: '13px', fontWeight: '700' }}>Ambient Focus Sound Synth</span>
             </div>
-            {synthPlaying && <span style={{ fontSize: '10px', color: '#4C8C89', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}><span className="w-2 h-2 rounded-full bg-green-500 animate-ping" /> SYNTHESIZER ACTIVE</span>}
+            {synthPlaying && <span style={{ fontSize: '10px', color: '#40C8E0', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}><span className="w-2 h-2 rounded-full bg-green-500 animate-ping" /> SYNTHESIZER ACTIVE</span>}
           </div>
 
           <p style={{ fontSize: '12px', color: 'var(--text3)', marginBottom: '14px', lineHeight: '1.5' }}>
@@ -480,8 +480,8 @@ export default function SettingsPage() {
                 key={sound.id}
                 onClick={() => handleSynthTypeChange(sound.id)}
                 style={{
-                  background: synthType === sound.id ? 'rgba(200,138,61,0.1)' : 'var(--bg3)',
-                  border: `1px solid ${synthType === sound.id ? '#C88A3D' : 'transparent'}`,
+                  background: synthType === sound.id ? 'rgba(79,107,255,0.1)' : 'var(--bg3)',
+                  border: `1px solid ${synthType === sound.id ? '#4F6BFF' : 'transparent'}`,
                   borderRadius: '8px',
                   padding: '10px 8px',
                   cursor: 'pointer',
@@ -502,7 +502,7 @@ export default function SettingsPage() {
                 alignItems: 'center',
                 gap: '8px',
                 padding: '8px 16px',
-                background: synthPlaying ? '#BB6453' : '#C88A3D',
+                background: synthPlaying ? '#FF453A' : '#4F6BFF',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '8px',
@@ -523,7 +523,7 @@ export default function SettingsPage() {
                 step="0.05"
                 value={volume}
                 onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                style={{ flex: 1, accentColor: '#C88A3D', cursor: 'pointer' }}
+                style={{ flex: 1, accentColor: '#4F6BFF', cursor: 'pointer' }}
               />
               <span style={{ fontSize: '11px', color: 'var(--text3)', width: '25px', textAlign: 'right' }}>{Math.round(volume * 100)}%</span>
             </div>
@@ -551,8 +551,8 @@ export default function SettingsPage() {
                     borderRadius: '999px',
                     fontSize: '12px',
                     cursor: 'pointer',
-                    background: isSelected ? 'rgba(200,138,61,0.1)' : 'var(--bg3)',
-                    border: `1px solid ${isSelected ? '#C88A3D' : 'var(--border)'}`,
+                    background: isSelected ? 'rgba(79,107,255,0.1)' : 'var(--bg3)',
+                    border: `1px solid ${isSelected ? '#4F6BFF' : 'var(--border)'}`,
                     color: isSelected ? '#fff' : 'var(--text3)',
                     transition: 'all 0.1s'
                   }}
@@ -585,8 +585,8 @@ export default function SettingsPage() {
                     borderRadius: '6px',
                     fontSize: '11px',
                     cursor: 'pointer',
-                    background: isSelected ? 'rgba(76,140,137,0.1)' : 'var(--bg3)',
-                    border: `1px solid ${isSelected ? '#4C8C89' : 'var(--border)'}`,
+                    background: isSelected ? 'rgba(64,200,224,0.1)' : 'var(--bg3)',
+                    border: `1px solid ${isSelected ? '#40C8E0' : 'var(--border)'}`,
                     color: isSelected ? '#fff' : 'var(--text3)',
                     transition: 'all 0.1s'
                   }}
@@ -611,7 +611,7 @@ export default function SettingsPage() {
               id="notifications"
               checked={notifications} 
               onChange={e => setNotifications(e.target.checked)} 
-              style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#C88A3D' }}
+              style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#4F6BFF' }}
             />
             <label htmlFor="notifications" style={{ fontSize: '13px', color: '#fff', cursor: 'pointer' }}>
               Enable daily email and push notifications

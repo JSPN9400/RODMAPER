@@ -14,16 +14,16 @@ import { Confetti } from '@/components/ui/Confetti'
 import { RoadmapDetailSkeleton } from '@/components/ui/PageState'
 
 const CHIP: Record<string, string> = { sql: 'chip-sql', python: 'chip-python', bi: 'chip-bi', ai: 'chip-ai', git: 'chip-git', js: 'chip-js' }
-const BAR: Record<string, string> = { violet: '#C88A3D', blue: '#6480A2', green: '#5B8A72', amber: '#C9A227', red: '#BB6453', teal: '#4C8C89', pink: '#B6708C' }
+const BAR: Record<string, string> = { violet: '#4F6BFF', blue: '#0A9EFF', green: '#30D158', amber: '#FF9F0A', red: '#FF453A', teal: '#40C8E0', pink: '#FF375F' }
 
 const colorOptions = [
-  { value: 'violet', label: 'Brass', hex: '#C88A3D' },
-  { value: 'blue', label: 'Slate', hex: '#6480A2' },
-  { value: 'green', label: 'Pine', hex: '#5B8A72' },
-  { value: 'amber', label: 'Ochre', hex: '#C9A227' },
-  { value: 'red', label: 'Rust', hex: '#BB6453' },
-  { value: 'teal', label: 'Teal', hex: '#4C8C89' },
-  { value: 'pink', label: 'Rose', hex: '#B6708C' },
+  { value: 'violet', label: 'Cobalt', hex: '#4F6BFF' },
+  { value: 'blue', label: 'Sky', hex: '#0A9EFF' },
+  { value: 'green', label: 'Mint', hex: '#30D158' },
+  { value: 'amber', label: 'Amber', hex: '#FF9F0A' },
+  { value: 'red', label: 'Red', hex: '#FF453A' },
+  { value: 'teal', label: 'Teal', hex: '#40C8E0' },
+  { value: 'pink', label: 'Pink', hex: '#FF375F' },
 ]
 
 export default function RoadmapPage() {
@@ -618,18 +618,18 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(20,18,15,0.85)', backdropFilter: 'blur(8px)',
+      background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100,
       padding: '20px'
     }}>
       <div style={{
-        background: '#1C1915', border: '1px solid var(--border2)',
+        background: '#1C1C1E', border: '1px solid var(--border2)',
         borderRadius: '16px', width: '100%', maxWidth: '500px',
         boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', overflow: 'hidden'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(244,238,226,0.06)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(245,245,247,0.06)' }}>
           <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#fff', margin: 0 }}>{title}</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(244,238,226,0.4)' }}><X size={18} /></button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(245,245,247,0.4)' }}><X size={18} /></button>
         </div>
         <div style={{ padding: '20px', maxHeight: '75vh', overflowY: 'auto' }}>
           {children}

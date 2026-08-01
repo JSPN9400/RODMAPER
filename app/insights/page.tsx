@@ -7,7 +7,7 @@
 
 'use client'
 import { useEffect, useState } from 'react'
-import { Brain, TrendingUp, Target, RefreshCw, Lightbulb, ChevronRight, Zap, Clock, CalendarDays } from 'lucide-react'
+import { Brain, TrendingUp, Target, RefreshCw, Lightbulb, ChevronRight, Zap, Clock, CalendarDays, Award, Layers, BookOpen, Sparkles } from 'lucide-react'
 
 function formatHourLabel(h: number): string {
   const period = h < 12 ? 'AM' : 'PM'
@@ -15,13 +15,24 @@ function formatHourLabel(h: number): string {
   return `${h12} ${period}`
 }
 
+const SKILL_COLORS = ['cobalt', 'sky', 'mint', 'amber', 'red', 'teal', 'pink']
+
 export default function InsightsPage() {
   const [roadmaps, setRoadmaps] = useState<any[]>([])
   const [selected, setSelected] = useState('')
+
+  const [skillData, setSkillData] = useState<any>(null)
+  const [skillLoading, setSkillLoading] = useState(true)
+
+  const [reflections, setReflections] = useState<any[]>([])
+  const [reflectionsLoading, setReflectionsLoading] = useState(true)
+  const [generatingReflection, setGeneratingReflection] = useState(false)
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any>(null)
+  const [analysisError, setAnalysisError] = useState('')
   const [suggestion, setSuggestion] = useState<any>(null)
   const [sugLoading, setSugLoading] = useState(false)
+  const [sugError, setSugError] = useState('')
 
   const [activity, setActivity] = useState<any>(null)
   const [activityLoading, setActivityLoading] = useState(true)
@@ -33,19 +44,48 @@ export default function InsightsPage() {
       if (arr.length>0) setSelected(arr[0].id)
     })
     fetch('/api/accountability').then(r => r.ok ? r.json() : null).then(setActivity).catch(() => setActivity(null)).finally(() => setActivityLoading(false))
+    fetch('/api/insights/skills').then(r => r.ok ? r.json() : null).then(setSkillData).catch(() => setSkillData(null)).finally(() => setSkillLoading(false))
+    fetch('/api/reflection').then(r => r.ok ? r.json() : null).then(d => setReflections(Array.isArray(d) ? d : [])).catch(() => setReflections([])).finally(() => setReflectionsLoading(false))
   }, [])
+
+  async function generateReflection() {
+    setGeneratingReflection(true)
+    try {
+      const res = await fetch('/api/reflection', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) setReflections((prev) => [data, ...prev.filter((r) => r.id !== data.id)])
+    } finally {
+      setGeneratingReflection(false)
+    }
+  }
 
   async function analyze() {
     if (!selected) return
-    setLoading(true); setData(null)
-    const res = await fetch('/api/self-learn', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ roadmapId: selected, action:'analyze' }) })
-    setData(await res.json()); setLoading(false)
+    setLoading(true); setData(null); setAnalysisError('')
+    try {
+      const res = await fetch('/api/self-learn', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ roadmapId: selected, action:'analyze' }) })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Analysis failed')
+      setData(json)
+    } catch (e: any) {
+      setAnalysisError(e.message || 'Analysis is unavailable right now')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function getSuggestion() {
-    setSugLoading(true); setSuggestion(null)
-    const res = await fetch('/api/self-learn', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ roadmapId: selected, action:'suggest' }) })
-    setSuggestion(await res.json()); setSugLoading(false)
+    setSugLoading(true); setSuggestion(null); setSugError('')
+    try {
+      const res = await fetch('/api/self-learn', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ roadmapId: selected, action:'suggest' }) })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Suggestion failed')
+      setSuggestion(json)
+    } catch (e: any) {
+      setSugError(e.message || 'Suggestion is unavailable right now')
+    } finally {
+      setSugLoading(false)
+    }
   }
 
   const scoreColor = (s:number) => s>=75?'var(--green)':s>=50?'var(--amber)':'var(--red)'
@@ -122,6 +162,85 @@ export default function InsightsPage() {
         </div>
       )}
 
+      {!skillLoading && skillData && (
+        <div className="card-feed" style={{ padding: '20px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+            <Award size={15} style={{ color: 'var(--accent3)' }} />
+            <span style={{ fontSize: '13px', fontWeight: '700' }}>Career Readiness</span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '18px' }}>
+            <div className="stat-figure" style={{ fontSize: '32px', fontWeight: '800', color: 'var(--accent3)' }}>{skillData.readiness.score}</div>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: '700' }}>{skillData.readiness.label}</div>
+              <div style={{ fontSize: '11px', color: 'var(--text3)' }}>{skillData.readiness.totalSkills} skills · {skillData.readiness.completedRoadmaps} roadmap{skillData.readiness.completedRoadmaps === 1 ? '' : 's'} finished</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: skillData.skills.length > 0 ? '18px' : 0 }}>
+            {[
+              { label: 'Consistency', value: skillData.readiness.consistencyScore },
+              { label: 'Depth', value: skillData.readiness.depthScore },
+              { label: 'Breadth', value: skillData.readiness.breadthScore },
+            ].map((f) => (
+              <div key={f.label}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text3)', marginBottom: '3px' }}>
+                  <span>{f.label}</span><span>{f.value}%</span>
+                </div>
+                <div style={{ height: '5px', background: 'var(--bg4)', borderRadius: '999px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${f.value}%`, background: 'var(--grad)', borderRadius: '999px' }} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {skillData.skills.length > 0 && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                <Layers size={12} style={{ color: 'var(--text3)' }} />
+                <span className="section-title" style={{ margin: 0 }}>Skill graph</span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {skillData.skills.slice(0, 16).map((s: any, i: number) => (
+                  <span key={s.name} className="chip" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: `var(--cat-${SKILL_COLORS[i % SKILL_COLORS.length]})` }} />
+                    {s.name} <span style={{ opacity: 0.6 }}>×{s.count}</span>
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      <div className="card-feed" style={{ padding: '20px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <BookOpen size={15} style={{ color: 'var(--accent3)' }} />
+            <span style={{ fontSize: '13px', fontWeight: '700' }}>Weekly Reflection</span>
+          </div>
+          <button onClick={generateReflection} disabled={generatingReflection} className="btn btn-primary btn-sm">
+            {generatingReflection ? <RefreshCw size={12} style={{ animation: 'spin 0.7s linear infinite' }} /> : <Sparkles size={12} />}
+            {generatingReflection ? 'Writing...' : "This week's reflection"}
+          </button>
+        </div>
+
+        {!reflectionsLoading && reflections.length === 0 && (
+          <p style={{ fontSize: '12px', color: 'var(--text3)' }}>No reflections yet — generate this week's to get started. One per week, written from your actual activity.</p>
+        )}
+
+        {reflections.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {reflections.slice(0, 4).map((r) => (
+              <div key={r.id} style={{ padding: '14px', background: 'var(--bg4)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                <div className="section-title" style={{ marginBottom: '6px' }}>Week of {r.weekStart}</div>
+                <p style={{ fontSize: '13px', color: 'var(--text2)', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-wrap' }}>{r.content}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {!data&&!loading&&(
         <div className="card-feed" style={{ padding:'48px', textAlign:'center' }}>
           <Brain size={32} style={{ color:'var(--text4)', marginBottom:'14px' }} />
@@ -137,6 +256,13 @@ export default function InsightsPage() {
             {[0,1,2].map(i=><div key={i} style={{ width:'8px', height:'8px', borderRadius:'50%', background:'var(--accent)', animation:`pulse-dot 1.2s ease-in-out ${i*0.2}s infinite` }}/>)}
           </div>
           <p style={{ fontSize:'13px', color:'var(--text3)' }}>AI is analyzing your patterns...</p>
+        </div>
+      )}
+
+      {analysisError && (
+        <div className="card-feed" style={{ padding: '18px', marginBottom: '16px', border: '1px solid rgba(255,69,58,0.24)' }}>
+          <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--red)', marginBottom: '4px' }}>Analysis unavailable</div>
+          <div style={{ fontSize: '12px', color: 'var(--text2)' }}>{analysisError}</div>
         </div>
       )}
 
@@ -200,6 +326,9 @@ export default function InsightsPage() {
                 {sugLoading?'Thinking...':'Get Suggestion'}
               </button>
             </div>
+            {sugError && (
+              <div style={{ fontSize: '12px', color: 'var(--red)', background: 'var(--red-bg)', padding: '10px 12px', borderRadius: '8px' }}>{sugError}</div>
+            )}
             {suggestion&&(
               <div style={{ background:'var(--bg3)', borderRadius:'8px', padding:'14px' }}>
                 <div style={{ fontSize:'14px', fontWeight:'700', marginBottom:'5px' }}>{suggestion.suggestedTopic}</div>

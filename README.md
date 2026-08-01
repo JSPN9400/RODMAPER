@@ -893,3 +893,142 @@ structure (content/copy/sections) — only their color values, which the
 earlier sweep already keeps in sync with whatever `:root` defines, so
 they picked up the new palette automatically without needing individual
 edits.
+
+---
+
+## 26. Phase C + D: Predictive Analytics, Reflection & Adaptive Planning
+
+Built together per request. All of it derives from data that already
+existed (`Task.doneAt`, `Task.techStack`, `Roadmap.createdAt`) — no new
+tracking burden on the user, just deeper analysis of what's already
+being recorded, same principle as the Accountability Engine (§19).
+
+**`lib/predictions.ts`**:
+- `computeSkillGraph(userId)` — rolls up `Task.techStack` tags across
+  every completed task into a ranked skill list (name, completion count,
+  how many distinct roadmaps it appeared in).
+- `computeCareerReadiness(userId)` — a composite 0-100 score from three
+  factors, each shown separately rather than hidden in a black-box
+  number: **consistency** (45% weight — reuses the Accountability
+  Engine's reliability score, since real-world readiness tracks
+  follow-through more than raw activity), **depth** (30% — average
+  completions per skill, rewards finishing over skimming), **breadth**
+  (25% — distinct skills touched).
+- `predictCompletion(roadmapId, userId)` — predicted finish date and a
+  learning-curve trend (accelerating/steady/slowing), computed from the
+  student's actual velocity over the last 14 days vs. the 14 before that
+  — not the nominal pace the roadmap's `totalDays` implied. Needs at
+  least 4 completed tasks before it'll show anything; returns
+  `hasEnoughData: false` otherwise rather than a meaningless guess.
+
+**`lib/reflection.ts`** — `getOrGenerateReflection()`: computes real
+weekly numbers (tasks done, active days, skills touched, streak,
+comparison to the previous week) and asks Groq/Gemini (rule-based
+fallback if neither is configured) for a short, specific two-paragraph
+reflection. Cached per `(user, weekStart)` in the new `Reflection`
+model — revisiting the same week returns the same text rather than
+regenerating or losing it. Surfaced on `/insights`.
+
+**`lib/adaptive.ts`**:
+- `replanRemainingTasks()` — "dynamic roadmap adjustment." Only ever
+  touches *incomplete* tasks; asks AI to redistribute (and, if genuinely
+  necessary, drop the lowest-priority) remaining tasks across the days
+  actually left. Day numbers continue on from whatever's already
+  completed rather than restarting at 1 — otherwise a replanned "day 3"
+  could sit next to an already-completed "day 40" in the UI, which reads
+  as broken even though it technically isn't. Surfaced on the roadmap
+  detail page when predicted completion is more than 5 days behind
+  target.
+- `generateRevisionTasks()` — "personalized revision planning." Looks at
+  what's actually been completed (not the original plan) and generates
+  3-4 short, specific spaced-revision tasks, appended after the current
+  last day and grouped into whichever phase/project the student most
+  recently worked in (so they're findable under a specific tab, not just
+  the "All Days" view). Needs at least 3 completed tasks.
+
+**New model**: `Reflection` (one row per user per week, `@@unique([userId, weekStart])`).
+
+**Where it shows up**: Career Readiness + Skill Graph and Weekly
+Reflection are new cards on `/insights` (global, not tied to one
+roadmap). Predicted completion date + learning curve, plus the Replan
+and Add Revision Tasks buttons, are on the roadmap detail page
+(`/roadmap/[id]`), right below the day-tile progress heatmap.
+
+---
+
+## 27. Bug audit — full pass
+
+Comprehensive sweep: syntax integrity (parens/braces) across all 70
+source files, every `package.json` dependency actually used, implicit-
+`any` patterns (the class of bug that broke the Vercel build twice
+earlier in this project's history — see §5), every CSS class referenced
+in JSX checked against what's defined in `globals.css`, every API route
+checked for an auth guard, and a full manual review of `schema.prisma`.
+
+**One real bug found and fixed**: the Settings nav item's mobile tile
+color (`tile: 'gray'`, both `NAV` and `MOBILE_NAV` in
+`components/ui/Sidebar.tsx`) referenced `var(--cat-gray)` for its active-
+state color — but only `.icon-tile.gray` (the desktop icon background)
+had ever been defined; the `--cat-gray` custom property itself was
+missing from both `:root` and `[data-theme="light"]`. On mobile, tapping
+into Settings would silently fail to color its active-tab indicator and
+icon (the `var()` reference just resolves to nothing). Added
+`--cat-gray: #8E8E93` (dark) / `#6E6E73` (light), both contrast-checked
+against their backgrounds (6.44:1 and 4.66:1 — comfortably past AA).
+
+Everything else checked out: no other missing CSS classes/variables, no
+missing npm dependencies, no implicit-`any` risk anywhere in `app/api`
+or `lib`, every non-NextAuth API route has a session check, and the full
+Prisma schema is internally consistent (every relation has a matching
+reverse field, every enum used matches its declaration).
+
+---
+
+## 28. Fixed: roadmap generation and AI suggestions failing silently
+
+Two related reports — "the roadmap generator isn't working" and "the
+suggestion AI isn't replying" — traced to two different bugs, both in
+the same family (errors that never reached the user in a form they
+could act on).
+
+- **`app/api/roadmaps/generate/route.ts` had no top-level try/catch.**
+  `generateShortTermRoadmap`/`generateLongTermRoadmap` already correctly
+  throw when neither `GROQ_API_KEY` nor `GEMINI_API_KEY` is configured
+  (or when both providers fail) — but with nothing catching that at the
+  route level, Next.js's default error handling took over and returned a
+  generic **HTML** 500 page instead of JSON. The frontend
+  (`app/create/page.tsx`) always called `res.json()` on the response,
+  which then threw its own cryptic parse error — so instead of "no AI
+  provider is configured," the person saw an unrelated JSON-parsing
+  failure with no indication of the real cause. Wrapped the whole
+  handler in try/catch with messages that actually distinguish
+  "no provider configured" from "the model returned something
+  unparseable" from a generic failure.
+- **`app/api/self-learn/route.ts` (the "Get Suggestion" / "Analyze"
+  features on `/insights`) silently swallowed every error.** Both code
+  paths had a bare `catch { return NextResponse.json({ ...fake
+  hardcoded content... }) }` — no `console.error`, no error status, just
+  a made-up "Review previous topics" / motivation-score-70 response
+  every single time something failed. This made the feature look like
+  it was "replying" with generic, unhelpful, non-personalized content
+  instead of visibly failing — impossible to diagnose from either the UI
+  or the server logs. Also had no Groq→Gemini fallback when Groq itself
+  errored (only when the key was entirely absent) — every other AI call
+  in the app follows the fallback pattern; this was the one exception.
+  Also asked the model directly for a resource `url`, the same
+  hallucinated-link problem fixed in §20 for roadmap generation, missed
+  here. Rewrote the whole route: real Groq→Gemini fallback, resource
+  links resolved server-side instead of trusted from the model, and
+  actual error responses (502, with a message naming the likely cause)
+  instead of fake success.
+- **`app/insights/page.tsx` didn't check `res.ok`** before treating a
+  response as successful data — so even with the route fixed, the error
+  responses above would have rendered as blank/broken cards instead of a
+  visible message. Added `analysisError`/`sugError` state and an actual
+  error card in the UI for both the "Analyze" and "Get Suggestion"
+  flows.
+
+If roadmap generation or suggestions are still not working after this
+fix, the app will now say exactly why (most likely: `GROQ_API_KEY` and
+`GEMINI_API_KEY` are both missing or invalid in your environment
+variables) instead of failing silently or confusingly.

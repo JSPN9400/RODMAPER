@@ -11,40 +11,48 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import Groq from 'groq-sdk'
 
-function getGroq() {
-  return new Groq({ apiKey: process.env.GROQ_API_KEY || 'mock_key' })
+async function geminiCall(prompt: string): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) throw new Error('Neither GROQ_API_KEY nor GEMINI_API_KEY is configured')
+  const { GoogleGenAI } = require('@google/genai')
+  const ai = new GoogleGenAI({
+    apiKey,
+    httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+  })
+  const response = await ai.models.generateContent({
+    model: 'gemini-3.5-flash',
+    contents: prompt,
+    config: { temperature: 0.7 },
+  })
+  return response.text || ''
 }
 
+// Groq primary, Gemini fallback — including when Groq is configured but
+// the call itself fails (invalid/expired key, rate limit, outage), not
+// just when the key is entirely absent. Every other AI call in this app
+// follows this same pattern (see lib/mentor.ts, lib/adaptive.ts,
+// lib/reflection.ts) — this route was the one place it was missing,
+// making it more fragile than the rest of the app for no reason.
 async function groqCall(prompt: string): Promise<string> {
   const hasGroq = process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim() !== ''
-  if (!hasGroq) {
-    const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) throw new Error('Neither GROQ_API_KEY nor GEMINI_API_KEY is configured')
-    const { GoogleGenAI } = require('@google/genai')
-    const ai = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    })
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
+  if (hasGroq) {
+    try {
+      const client = new Groq({ apiKey: process.env.GROQ_API_KEY! })
+      const res = await client.chat.completions.create({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 1200,
         temperature: 0.7,
-      }
-    })
-    return response.text || ''
+        messages: [{ role: 'user', content: prompt }],
+      })
+      const text = res.choices[0]?.message?.content
+      if (text) return text
+      throw new Error('Groq returned an empty response')
+    } catch (err) {
+      console.warn('[self-learn] Groq failed, trying Gemini:', err)
+      return geminiCall(prompt)
+    }
   }
-
-  const res = await getGroq().chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
-    max_tokens: 1200, temperature: 0.7,
-    messages: [{ role: 'user', content: prompt }]
-  })
-  return res.choices[0]?.message?.content || ''
+  return geminiCall(prompt)
 }
 
 function parseJSON(text: string): any {
@@ -53,6 +61,15 @@ function parseJSON(text: string): any {
   const e = Math.max(c.lastIndexOf('}'), c.lastIndexOf(']'))
   if (s !== -1 && e !== -1) c = c.slice(s, e + 1)
   return JSON.parse(c)
+}
+
+// Same reasoning as lib/roadmap-generator.ts's buildResourceUrl: an LLM
+// reliably hallucinates specific URLs since it has no live web access, so
+// asking it for a resource name is fine, asking it for a working link is
+// not. This route used to ask the model for a direct "url" field, which
+// was frequently a dead link — resolved server-side instead now.
+function buildResourceUrl(name: string): string {
+  return `https://www.google.com/search?q=${encodeURIComponent(name)}`
 }
 
 export async function POST(req: NextRequest) {
@@ -84,15 +101,25 @@ export async function POST(req: NextRequest) {
     const completed = done.map((t: any) => t.title).slice(-5)
     const skipped = tasks.filter((t: any) => !t.done).slice(0,5).map((t: any) => t.title)
     try {
-      const text = await groqCall(`Learning coach. Suggest best next task.
+      const text = await groqCall(`Learning coach. Suggest the single best next task for this student.
 Goal: ${roadmap.goal}
 Completed: ${completed.join(', ')}
 Struggling: ${skipped.join(', ')}
 Days left: ${tasks.filter((t: any)=>!t.done).length}
-Return ONLY JSON: {"suggestedTopic":"topic","reason":"why","resources":[{"name":"name","url":"https://url.com"}],"estimatedHours":2}`)
-      return NextResponse.json(parseJSON(text))
-    } catch {
-      return NextResponse.json({ suggestedTopic: 'Review previous topics', reason: 'Consolidate your learning', resources: [], estimatedHours: 2 })
+Return ONLY JSON, no markdown: {"suggestedTopic":"topic","reason":"why, specific to their situation","resourceName":"one specific, real, well-known resource — do not include a URL, just its name","estimatedHours":2}`)
+      const parsed = parseJSON(text)
+      return NextResponse.json({
+        suggestedTopic: parsed.suggestedTopic,
+        reason: parsed.reason,
+        resources: parsed.resourceName ? [{ name: parsed.resourceName, url: buildResourceUrl(parsed.resourceName) }] : [],
+        estimatedHours: parsed.estimatedHours || 2,
+      })
+    } catch (err) {
+      console.error('[self-learn] suggestion generation failed:', err)
+      return NextResponse.json(
+        { error: 'The AI suggestion is unavailable right now — check that GROQ_API_KEY or GEMINI_API_KEY is configured, then try again.' },
+        { status: 502 }
+      )
     }
   }
 
@@ -104,9 +131,13 @@ Completion: ${completionRate}%
 Days done: ${done.length}, Max streak: ${streakMax}
 Skipped days: ${tasks.filter((t: any)=>!t.done).length}
 Skills: ${topSkills.join(', ')}
-Return ONLY JSON: {"insights":["insight1","insight2"],"adjustments":[],"nextSteps":["step1","step2"],"motivationScore":75,"learningStyle":"Consistent Learner"}`)
+Return ONLY JSON, no markdown: {"insights":["insight1","insight2"],"adjustments":[],"nextSteps":["step1","step2"],"motivationScore":75,"learningStyle":"Consistent Learner"}`)
     return NextResponse.json({ ...parseJSON(text), completionRate, streakMax, topSkills })
-  } catch {
-    return NextResponse.json({ insights:['Keep going!'], adjustments:[], nextSteps:['Complete today task'], motivationScore:70, learningStyle:'Active Learner', completionRate, streakMax, topSkills })
+  } catch (err) {
+    console.error('[self-learn] analysis generation failed:', err)
+    return NextResponse.json(
+      { error: 'AI analysis is unavailable right now — check that GROQ_API_KEY or GEMINI_API_KEY is configured, then try again.' },
+      { status: 502 }
+    )
   }
 }

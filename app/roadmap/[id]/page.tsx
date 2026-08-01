@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowLeft, BarChart2, Trash2, Edit2, Plus, X, Save } from 'lucide-react'
+import { CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowLeft, BarChart2, Trash2, Edit2, Plus, X, Save, TrendingUp, TrendingDown, Minus, RotateCcw, BookOpen, Sparkles } from 'lucide-react'
 import { Confetti } from '@/components/ui/Confetti'
 import { RoadmapDetailSkeleton } from '@/components/ui/PageState'
 
@@ -34,6 +34,12 @@ export default function RoadmapPage() {
   const [activeProj, setActiveProj] = useState(-1) // Default to -1 (All Days)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [celebrateId, setCelebrateId] = useState<string | null>(null)
+
+  const [prediction, setPrediction] = useState<any>(null)
+  const [replanning, setReplanning] = useState(false)
+  const [replanMsg, setReplanMsg] = useState('')
+  const [revising, setRevising] = useState(false)
+  const [revisionMsg, setRevisionMsg] = useState('')
 
   // Edit Mode States
   const [editMode, setEditMode] = useState(false)
@@ -67,7 +73,41 @@ export default function RoadmapPage() {
 
   useEffect(() => {
     fetchRoadmap()
-  }, [fetchRoadmap])
+    fetch(`/api/roadmaps/${id}/predict`).then(r => r.ok ? r.json() : null).then(setPrediction).catch(() => setPrediction(null))
+  }, [fetchRoadmap, id])
+
+  async function handleReplan() {
+    setReplanning(true)
+    setReplanMsg('')
+    try {
+      const res = await fetch(`/api/roadmaps/${id}/replan`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Could not replan')
+      setReplanMsg(data.note || 'Replanned.')
+      fetchRoadmap()
+      fetch(`/api/roadmaps/${id}/predict`).then(r => r.ok ? r.json() : null).then(setPrediction)
+    } catch (e: any) {
+      setReplanMsg(e.message || 'Could not replan right now')
+    } finally {
+      setReplanning(false)
+    }
+  }
+
+  async function handleRevision() {
+    setRevising(true)
+    setRevisionMsg('')
+    try {
+      const res = await fetch(`/api/roadmaps/${id}/revision`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Could not generate revision tasks')
+      setRevisionMsg(data.created > 0 ? `Added ${data.created} revision task${data.created === 1 ? '' : 's'} at the end of your roadmap.` : 'Not enough completed tasks yet for a meaningful revision set.')
+      if (data.created > 0) fetchRoadmap()
+    } catch (e: any) {
+      setRevisionMsg(e.message || 'Could not generate revision tasks right now')
+    } finally {
+      setRevising(false)
+    }
+  }
 
   async function toggleTask(task: any) {
     const newDone = !task.done
@@ -298,6 +338,49 @@ export default function RoadmapPage() {
           ))}
         </div>
       </div>
+
+      {prediction && prediction.hasEnoughData && (
+        <div className="card-feed" style={{ padding: '18px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text3)', marginBottom: '3px' }}>At your current pace</div>
+              <div style={{ fontSize: '15px', fontWeight: '700' }}>
+                {prediction.predictedDate ? new Date(prediction.predictedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                {prediction.aheadOrBehindDays !== null && (
+                  <span style={{ fontSize: '12px', fontWeight: '600', marginLeft: '8px', color: prediction.aheadOrBehindDays <= 0 ? 'var(--green)' : 'var(--amber)' }}>
+                    {prediction.aheadOrBehindDays === 0 ? 'right on target' : prediction.aheadOrBehindDays < 0 ? `${Math.abs(prediction.aheadOrBehindDays)}d ahead of target` : `${prediction.aheadOrBehindDays}d behind target`}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: 'var(--text3)' }}>
+              {prediction.learningCurve === 'accelerating' && <><TrendingUp size={13} style={{ color: 'var(--green)' }} /> Accelerating</>}
+              {prediction.learningCurve === 'slowing' && <><TrendingDown size={13} style={{ color: 'var(--amber)' }} /> Slowing down</>}
+              {prediction.learningCurve === 'steady' && <><Minus size={13} /> Steady pace</>}
+            </div>
+          </div>
+
+          {prediction.aheadOrBehindDays !== null && prediction.aheadOrBehindDays > 5 && (
+            <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
+              <button onClick={handleReplan} disabled={replanning} className="btn btn-ghost btn-sm">
+                {replanning ? <Sparkles size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+                {replanning ? 'Replanning...' : 'Replan remaining days'}
+              </button>
+              {replanMsg && <div style={{ fontSize: '12px', color: 'var(--text2)', marginTop: '8px' }}>{replanMsg}</div>}
+            </div>
+          )}
+
+          {done >= 3 && (
+            <div style={{ marginTop: '10px' }}>
+              <button onClick={handleRevision} disabled={revising} className="btn btn-ghost btn-sm">
+                {revising ? <Sparkles size={12} className="animate-spin" /> : <BookOpen size={12} />}
+                {revising ? 'Generating...' : 'Add revision tasks'}
+              </button>
+              {revisionMsg && <div style={{ fontSize: '12px', color: 'var(--text2)', marginTop: '8px' }}>{revisionMsg}</div>}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Project tabs & manager */}
       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px', alignItems: 'center' }}>

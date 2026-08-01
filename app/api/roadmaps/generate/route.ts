@@ -48,16 +48,70 @@ export async function POST(req: NextRequest) {
   const resolvedType = body.type || detectGoalType(goal)
   const color = body.color || 'violet'
 
-  if (resolvedType === 'short_term') {
-    const roadmap = await generateShortTermRoadmap({
+  try {
+    if (resolvedType === 'short_term') {
+      const roadmap = await generateShortTermRoadmap({
+        goal,
+        currentLevel: body.currentLevel || 'beginner',
+        daysAvailable: body.duration,
+        hoursPerDay: body.hoursPerDay,
+        background: body.background || '',
+        focusType: body.focusType || 'mixed',
+        clarifications: body.clarifications,
+      })
+
+      const created = await prisma.roadmap.create({
+        data: {
+          userId: session.user.id,
+          title: roadmap.title,
+          goal: roadmap.goal,
+          description: roadmap.summary,
+          totalDays: roadmap.daysAvailable,
+          roadmapType: 'SHORT_TERM',
+          createdBy: 'AI',
+          color,
+          projects: {
+            create: [
+              {
+                name: 'Daily Plan',
+                color,
+                order: 0,
+                startDay: 1,
+                endDay: roadmap.daysAvailable,
+              },
+            ],
+          },
+        },
+        include: { projects: true },
+      })
+
+      await prisma.task.createMany({
+        data: roadmap.tasks.map((task) => ({
+          roadmapId: created.id,
+          projectId: created.projects[0]?.id || null,
+          day: task.day,
+          title: task.topic,
+          description: `${task.schedule.morning}\n\n${task.schedule.afternoon}\n\n${task.schedule.evening}\n\nMini project: ${task.miniProject}`,
+          techStack: [{ name: task.topic, type: 'other' }, { name: `Difficulty ${task.difficulty}`, type: 'other' }] as unknown as Prisma.InputJsonValue,
+          resources: task.resources as unknown as Prisma.InputJsonValue,
+        })),
+      })
+
+      await trackGoalPopularity(goal, 'SHORT_TERM', body.duration)
+      return privateJson({ type: resolvedType, roadmap, id: created.id }, { status: 201 })
+    }
+
+    const roadmap = await generateLongTermRoadmap({
       goal,
+      targetDate: body.targetDate || `${body.duration} days`,
       currentLevel: body.currentLevel || 'beginner',
-      daysAvailable: body.duration,
       hoursPerDay: body.hoursPerDay,
       background: body.background || '',
-      focusType: body.focusType || 'mixed',
+      examType: body.examType,
       clarifications: body.clarifications,
     })
+
+    const totalDays = Math.max(body.duration, roadmap.phases.at(-1)?.endWeek ? roadmap.phases.at(-1)!.endWeek * 7 : body.duration)
 
     const created = await prisma.roadmap.create({
       data: {
@@ -65,124 +119,87 @@ export async function POST(req: NextRequest) {
         title: roadmap.title,
         goal: roadmap.goal,
         description: roadmap.summary,
-        totalDays: roadmap.daysAvailable,
-        roadmapType: 'SHORT_TERM',
+        totalDays,
+        roadmapType: 'LONG_TERM',
+        targetDate: body.targetDate ? new Date(body.targetDate) : null,
         createdBy: 'AI',
         color,
+        phases: {
+          create: roadmap.phases.map((phase: any) => ({
+            name: phase.name,
+            order: phase.order,
+            startWeek: phase.startWeek,
+            endWeek: phase.endWeek,
+            milestones: phase.weeklyMilestones as unknown as Prisma.InputJsonValue,
+            topics: phase.keyTopicsChecklist as unknown as Prisma.InputJsonValue,
+          })),
+        },
         projects: {
-          create: [
-            {
-              name: 'Daily Plan',
-              color,
-              order: 0,
-              startDay: 1,
-              endDay: roadmap.daysAvailable,
-            },
-          ],
+          create: roadmap.phases.map((phase: any) => ({
+            name: phase.name,
+            color,
+            order: phase.order - 1,
+            startDay: (phase.startWeek - 1) * 7 + 1,
+            endDay: phase.endWeek * 7,
+          })),
         },
       },
-      include: { projects: true },
+      include: { phases: true, projects: { orderBy: { order: 'asc' } } },
     })
 
-    await prisma.task.createMany({
-      data: roadmap.tasks.map((task) => ({
-        roadmapId: created.id,
-        projectId: created.projects[0]?.id || null,
-        day: task.day,
-        title: task.topic,
-        description: `${task.schedule.morning}\n\n${task.schedule.afternoon}\n\n${task.schedule.evening}\n\nMini project: ${task.miniProject}`,
-        techStack: [{ name: task.topic, type: 'other' }, { name: `Difficulty ${task.difficulty}`, type: 'other' }] as unknown as Prisma.InputJsonValue,
-        resources: task.resources as unknown as Prisma.InputJsonValue,
-      })),
-    })
+    // Long-term roadmaps only have weekly granularity from the AI (weeklyMilestones),
+    // not daily tasks. Turn each weekly milestone into one checkable Task, linked to
+    // its phase's matching Project, so the dashboard/today/reports/checklist — which
+    // are all built around the Task model — actually have something to show.
+    const taskData: Prisma.TaskCreateManyInput[] = []
+    roadmap.phases.forEach((phase: any) => {
+      const project = created.projects.find((p: any) => p.order === phase.order - 1)
+      const techStack = (phase.keyTopicsChecklist || [])
+        .slice(0, 4)
+        .map((topic: any) => ({ name: topic, type: 'other' }))
+      const resources = (phase.resources || [])
+        .filter((r: any) => r.url)
+        .map((r: any) => ({ name: r.name, url: r.url as string }))
 
-    await trackGoalPopularity(goal, 'SHORT_TERM', body.duration)
-    return privateJson({ type: resolvedType, roadmap, id: created.id }, { status: 201 })
-  }
+      ;(phase.weeklyMilestones || []).forEach((m: any) => {
+        const day = Math.max(1, (m.week - 1) * 7 + 1)
+        const description = [
+          m.milestone,
+          m.practiceTest ? `Practice test: ${m.practiceTest}` : null,
+          m.review ? `Review: ${m.review}` : null,
+        ].filter(Boolean).join('\n\n')
 
-  const roadmap = await generateLongTermRoadmap({
-    goal,
-    targetDate: body.targetDate || `${body.duration} days`,
-    currentLevel: body.currentLevel || 'beginner',
-    hoursPerDay: body.hoursPerDay,
-    background: body.background || '',
-    examType: body.examType,
-    clarifications: body.clarifications,
-  })
-
-  const totalDays = Math.max(body.duration, roadmap.phases.at(-1)?.endWeek ? roadmap.phases.at(-1)!.endWeek * 7 : body.duration)
-
-  const created = await prisma.roadmap.create({
-    data: {
-      userId: session.user.id,
-      title: roadmap.title,
-      goal: roadmap.goal,
-      description: roadmap.summary,
-      totalDays,
-      roadmapType: 'LONG_TERM',
-      targetDate: body.targetDate ? new Date(body.targetDate) : null,
-      createdBy: 'AI',
-      color,
-      phases: {
-        create: roadmap.phases.map((phase: any) => ({
-          name: phase.name,
-          order: phase.order,
-          startWeek: phase.startWeek,
-          endWeek: phase.endWeek,
-          milestones: phase.weeklyMilestones as unknown as Prisma.InputJsonValue,
-          topics: phase.keyTopicsChecklist as unknown as Prisma.InputJsonValue,
-        })),
-      },
-      projects: {
-        create: roadmap.phases.map((phase: any) => ({
-          name: phase.name,
-          color,
-          order: phase.order - 1,
-          startDay: (phase.startWeek - 1) * 7 + 1,
-          endDay: phase.endWeek * 7,
-        })),
-      },
-    },
-    include: { phases: true, projects: { orderBy: { order: 'asc' } } },
-  })
-
-  // Long-term roadmaps only have weekly granularity from the AI (weeklyMilestones),
-  // not daily tasks. Turn each weekly milestone into one checkable Task, linked to
-  // its phase's matching Project, so the dashboard/today/reports/checklist — which
-  // are all built around the Task model — actually have something to show.
-  const taskData: Prisma.TaskCreateManyInput[] = []
-  roadmap.phases.forEach((phase: any) => {
-    const project = created.projects.find((p: any) => p.order === phase.order - 1)
-    const techStack = (phase.keyTopicsChecklist || [])
-      .slice(0, 4)
-      .map((topic: any) => ({ name: topic, type: 'other' }))
-    const resources = (phase.resources || [])
-      .filter((r: any) => r.url)
-      .map((r: any) => ({ name: r.name, url: r.url as string }))
-
-    ;(phase.weeklyMilestones || []).forEach((m: any) => {
-      const day = Math.max(1, (m.week - 1) * 7 + 1)
-      const description = [
-        m.milestone,
-        m.practiceTest ? `Practice test: ${m.practiceTest}` : null,
-        m.review ? `Review: ${m.review}` : null,
-      ].filter(Boolean).join('\n\n')
-
-      taskData.push({
-        roadmapId: created.id,
-        projectId: project?.id || null,
-        day,
-        title: m.focus || `Week ${m.week}`,
-        description,
-        techStack: techStack as unknown as Prisma.InputJsonValue,
-        resources: resources as unknown as Prisma.InputJsonValue,
+        taskData.push({
+          roadmapId: created.id,
+          projectId: project?.id || null,
+          day,
+          title: m.focus || `Week ${m.week}`,
+          description,
+          techStack: techStack as unknown as Prisma.InputJsonValue,
+          resources: resources as unknown as Prisma.InputJsonValue,
+        })
       })
     })
-  })
-  if (taskData.length > 0) {
-    await prisma.task.createMany({ data: taskData })
-  }
+    if (taskData.length > 0) {
+      await prisma.task.createMany({ data: taskData })
+    }
 
-  await trackGoalPopularity(goal, 'LONG_TERM', totalDays)
-  return privateJson({ type: resolvedType, roadmap, id: created.id }, { status: 201 })
+    await trackGoalPopularity(goal, 'LONG_TERM', totalDays)
+    return privateJson({ type: resolvedType, roadmap, id: created.id }, { status: 201 })
+  } catch (err: any) {
+    // Without this, an AI-provider failure (missing/invalid API key, both
+    // Groq and Gemini down, malformed JSON from the model) was an
+    // *uncaught* exception — Next.js would return a generic HTML 500 page
+    // instead of JSON, which then made the frontend's `res.json()` itself
+    // throw a cryptic parse error, hiding the real cause completely. Now
+    // it's a real JSON error response with a message that actually says
+    // what went wrong.
+    console.error('[roadmaps/generate] failed:', err)
+    const message = err?.message?.includes('GROQ_API_KEY') || err?.message?.includes('GEMINI_API_KEY')
+      ? 'No AI provider is configured — set GROQ_API_KEY or GEMINI_API_KEY in your environment variables.'
+      : err?.message?.includes('JSON')
+        ? 'The AI returned a response that could not be understood — this usually clears up if you try again.'
+        : 'Could not generate a roadmap right now. Please try again in a moment.'
+    return privateJson({ error: message }, { status: 502 })
+  }
 }

@@ -22,6 +22,7 @@ model User {
   pushSubs      PushSubscription[]
   messages      Message[]
   challenges    Challenge[]
+  reflections   Reflection[]
 }
 
 model Account {
@@ -215,6 +216,22 @@ model Challenge {
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   roadmap     Roadmap?  @relation(fields: [roadmapId], references: [id], onDelete: SetNull)
   @@index([userId, completed])
+}
+
+// One AI-generated weekly reflection per user per week — a short summary
+// of what happened, generated on demand (see lib/reflection.ts) rather
+// than on a schedule, and cached here so re-visiting the same week
+// doesn't regenerate it or lose it.
+model Reflection {
+  id        String   @id @default(cuid())
+  userId    String
+  weekStart String // date key (YYYY-MM-DD) of the Monday starting the week, in the user's timezone
+  content   String
+  stats     Json // snapshot of that week's numbers, for context if re-read later
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, weekStart])
+  @@index([userId, weekStart])
 }
 
 enum RoadmapStatus {

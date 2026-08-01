@@ -326,7 +326,7 @@ export default function CreateRoadmapPage() {
           <button onClick={() => setStep(2)} style={{ background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--text3)' }}>← Back</button>
           <div>
             <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '4px' }}>A few quick questions</div>
-            <p style={{ fontSize: '12px', color: 'var(--text3)', margin: 0 }}>Answering these helps the plan use real, specific content for your exact situation instead of generic advice. Skip any that don't apply.</p>
+            <p style={{ fontSize: '12px', color: 'var(--text3)', margin: 0 }}>Answering these helps the plan use real, specific content for your exact situation instead of generic advice. Skip any that don&apos;t apply.</p>
           </div>
           {clarifyQuestions.map((q, i) => (
             <div key={i}>

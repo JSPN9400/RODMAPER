@@ -226,7 +226,7 @@ export default function InsightsPage() {
         </div>
 
         {!reflectionsLoading && reflections.length === 0 && (
-          <p style={{ fontSize: '12px', color: 'var(--text3)' }}>No reflections yet — generate this week's to get started. One per week, written from your actual activity.</p>
+          <p style={{ fontSize: '12px', color: 'var(--text3)' }}>No reflections yet — generate this week&apos;s to get started. One per week, written from your actual activity.</p>
         )}
 
         {reflections.length > 0 && (

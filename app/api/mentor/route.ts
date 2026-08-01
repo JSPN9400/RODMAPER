@@ -37,7 +37,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ reply })
   } catch (err: any) {
     console.error('[mentor] askMentor failed:', err)
-    return NextResponse.json({ error: 'The mentor is unavailable right now — check that GROQ_API_KEY or GEMINI_API_KEY is configured.' }, { status: 502 })
+    // Don't always blame API keys — that was misleading whenever the real
+    // cause was something else (most commonly: the Message/Reflection/
+    // Challenge tables not existing yet because `npx prisma db push`
+    // hadn't been run after those models were added to the schema).
+    const msg = String(err?.message || '')
+    const code = err?.code
+    let userMessage = 'The mentor hit an unexpected error — try again in a moment.'
+    if (code === 'P2021' || msg.includes('does not exist') || msg.includes('Unknown table') || msg.includes('relation') && msg.includes('does not exist')) {
+      userMessage = 'The database is missing a required table — run `npx prisma db push` against your production database, then try again.'
+    } else if (msg.includes('GROQ_API_KEY') || msg.includes('GEMINI_API_KEY')) {
+      userMessage = 'No AI provider is configured — set GROQ_API_KEY or GEMINI_API_KEY in your environment variables and redeploy.'
+    } else if (msg.toLowerCase().includes('401') || msg.toLowerCase().includes('unauthorized') || msg.toLowerCase().includes('invalid api key') || msg.toLowerCase().includes('api key not valid')) {
+      userMessage = 'The configured AI provider rejected the request — double-check the API key value has no extra spaces or quotes, and that it hasn\u2019t expired.'
+    } else if (msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('quota')) {
+      userMessage = 'The AI provider is rate-limited right now — wait a moment and try again.'
+    }
+    return NextResponse.json({ error: userMessage }, { status: 502 })
   }
 }
 

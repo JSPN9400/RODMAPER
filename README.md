@@ -1032,3 +1032,29 @@ If roadmap generation or suggestions are still not working after this
 fix, the app will now say exactly why (most likely: `GROQ_API_KEY` and
 `GEMINI_API_KEY` are both missing or invalid in your environment
 variables) instead of failing silently or confusingly.
+
+---
+
+## 29. Settings: removed the API Keys card; Mentor error messages now diagnose the real cause
+
+- **Removed the "API Keys" card from `/settings`.** It showed real env
+  var names and a `DATABASE_URL=postgresql://...` pattern to every
+  signed-in user — reasonable as a developer's own reminder early on,
+  not appropriate once real customers are using the product. The
+  underlying settings functionality (timezone, notifications, theme,
+  data export) is untouched; this was purely a documentation card,
+  now removed from the UI (still documented in §6).
+- **`app/api/mentor/route.ts` always blamed "GROQ_API_KEY or
+  GEMINI_API_KEY" on any failure**, even when the real cause was
+  something else entirely — most plausibly, in this project's history,
+  the `Message` table not existing yet because `npx prisma db push`
+  hadn't been run after that model was added (§18). Since the route
+  already logs the real error server-side but the user only ever saw
+  the same generic guess, this was actively misleading once API keys
+  actually were configured correctly. Now classifies the error before
+  responding: a missing-table/Prisma error gets "run `npx prisma db
+  push`," an actual missing-key error still says to configure one, an
+  auth/401-shaped error from the AI provider says to check the key
+  value itself (stray spaces/quotes, expired key), and rate-limit
+  errors say to wait — instead of one message covering every case
+  whether or not it was the real one.

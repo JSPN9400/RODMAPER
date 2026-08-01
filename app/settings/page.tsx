@@ -8,7 +8,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { Save, Key, Globe, Check, ExternalLink, Bell, Clock, Target, ShieldCheck, Download, Trash2, Volume2, Play, Square, Activity, Moon, Sun, BellOff } from 'lucide-react'
+import { Save, Globe, Check, Bell, Clock, Target, ShieldCheck, Download, Trash2, Volume2, Play, Square, Activity, Moon, Sun, BellOff } from 'lucide-react'
 import { pushSupported, subscribeToPush, unsubscribeFromPush } from '@/lib/push-client'
 import { useTheme } from '@/lib/theme-client'
 
@@ -704,36 +704,12 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* API Keys */}
-        <div className="card-feed" style={{ padding: '22px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-            <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Key size={15} style={{ color: 'var(--accent3)' }} />
-            </div>
-            <div>
-              <div className="font-display" style={{ fontSize: '14px', fontWeight: '600' }}>API Keys</div>
-              <div style={{ fontSize: '11px', color: 'var(--text3)' }}>Configured on your hosting provider, not here</div>
-            </div>
-          </div>
-          <div style={{
-            background: 'var(--bg)', border: '1px solid var(--border2)', borderRadius: '10px', overflow: 'hidden',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 14px', borderBottom: '1px solid var(--border)', background: 'var(--bg3)' }}>
-              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--red)', opacity: 0.6 }} />
-              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--amber)', opacity: 0.6 }} />
-              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--green)', opacity: 0.6 }} />
-              <span className="stat-figure" style={{ fontSize: '10px', color: 'var(--text4)', marginLeft: '6px' }}>.env.local</span>
-            </div>
-            <div style={{ padding: '14px', fontFamily: 'var(--font-mono)', fontSize: '12px', lineHeight: '2', letterSpacing: '-0.01em' }}>
-              <div><span style={{ color: 'var(--accent3)' }}>GROQ_API_KEY</span><span style={{ color: 'var(--text4)' }}>=</span><span style={{ color: 'var(--text3)' }}>gsk_...</span></div>
-              <div><span style={{ color: 'var(--accent3)' }}>DATABASE_URL</span><span style={{ color: 'var(--text4)' }}>=</span><span style={{ color: 'var(--text3)' }}>postgresql://...</span></div>
-              <div><span style={{ color: 'var(--accent3)' }}>NEXTAUTH_SECRET</span><span style={{ color: 'var(--text4)' }}>=</span><span style={{ color: 'var(--text3)' }}>random-string</span></div>
-            </div>
-          </div>
-          <a href="https://console.groq.com" target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm" style={{ marginTop: '12px', textDecoration: 'none', display: 'inline-flex' }}>
-            <ExternalLink size={12} /> Get free Groq API key
-          </a>
-        </div>
+        {/* API Keys card intentionally not shown here — it's internal
+            deployment/hosting configuration (env vars set on Vercel etc.),
+            not something an end user configures from within the app, and
+            showing raw env var names/DATABASE_URL patterns to every
+            signed-in user isn't appropriate for a product real customers
+            use. Documented in README.md §6 instead. */}
 
         <button onClick={save} disabled={saving || loading} className="btn btn-primary" style={{ alignSelf: 'flex-start', marginTop: '4px' }}>
           {saved ? <><Check size={14} /> Saved!</> : <><Save size={14} /> {saving ? 'Saving...' : 'Save Settings'}</>}
